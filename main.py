@@ -27,7 +27,7 @@ class Camera:
         # create a new camera matrix and distortion
         self.new_camera_matrix, self.roi = cv.getOptimalNewCameraMatrix(
             self.camera_matrix, self.distortion_coeff, (self.frame_width, self.frame_height), 1, (self.frame_width, self.frame_height))
-        self.mapx, self.mapy = cv.initUndistortRectifyMap(
+        _mapx, _mapy = cv.initUndistortRectifyMap(
             self.camera_matrix, self.distortion_coeff, None, self.new_camera_matrix, (self.frame_width, self.frame_height), cv.CV_16SC2)
 
     def __del__(self):
@@ -50,88 +50,28 @@ class Camera:
         return processed_img
 
 
-def get_contour_bounds(contour):
-    min_x = (None, None)
-    max_x = (None, None)
-    min_y = (None, None)
-    max_y = (None, None)
-    for [[x, y]] in contour:
-        if min_x[0] is None or x < min_x[0]:
-            min_x = (x, y)
-        if min_y[1] is None or y < min_y[1]:
-            min_y = (x, y)
-        if max_x[0] is None or x > max_x[0]:
-            max_x = (x, y)
-        if max_y[1] is None or y > max_y[1]:
-            max_y = (x, y)
+class Die:
 
-    # take the of the maximum length between two adjacent points
-    lengths = [(min_y[0] - min_x[0], min_y[1] - min_x[1]), (max_x[0] - min_y[0], max_x[1] - min_y[1]),
-               (max_y[0] - max_x[0], max_y[1] - max_x[1]), (min_x[0] - max_y[0], min_x[1] - max_y[1])]
+    def __init__(self, img):
+        self.img = img
+        self.value = None
 
-    lengths = list(map(lambda p: p[0] * p[0] + p[1] * p[1], lengths))
-    max_length_squared = max(lengths)
-    max_length_index = lengths.index(max_length_squared)
-    max_length = math.sqrt(max_length_squared)
+    def __str__(self):
+        if self.value is None:
+            return "?"
+        else:
+            return str(self.value)
 
-    a = None
-    b = None
-
-    if max_length_index == 0:
-        a = min_y
-        b = min_x
-    elif max_length_index == 1:
-        a = max_x
-        b = min_y
-    elif max_length_index == 2:
-        a = max_y
-        b = max_x
-    elif max_length_index == 3:
-        a = min_x
-        b = max_y
-    else:
-        assert False
-
-    # the angle between a and b gives us the angle of the dice relative to the x axis
-    angle = math.atan((a[1] - b[1]) / (a[0] - b[0]))
-    angle_deg = abs(math.degrees(angle))
-
-    c = (int(math.cos(-angle) * max_length +
-             a[0]), int(math.sin(-angle) * max_length + a[1]))
-
-    d = (int(math.cos(-angle) * max_length +
-             b[0]), int(math.sin(-angle) * max_length + b[1]))
-
-    return (min_x, min_y, max_x, max_y, angle_deg)
+    def compute_value(self):
+        pass
 
 
-def get_die_value(img, rect):
-    """ Returns the value of the die. """
-
-    # copy and crop
-    try:
-        x, y, w, h = rect
-        die = img.copy()
-        die = die[y:y+h, x:x+w]
-        # print(rect)
-
-        circles = cv.HoughCircles(die, cv.HOUGH_GRADIENT,
-                                  1, 20, param1=50, param2=4, minRadius=3, maxRadius=4)
-
-        for circle in circles:
-            print(circle)
-            # die = cv.circle(die)
-
-        if len(circles) > 0:
-            return len(circles)
-        return None
-
-    except Exception as ex:
-        return None
+def crop(img, x, y, w, h):
+    return img[y:y+h, x:x+w]
 
 
 def main():
-    cam = Camera(CAMERA_LOGITECH)
+    cam = Camera(CAMERA_SURFACE_FRONT)
 
     while True:
 
@@ -154,6 +94,8 @@ def main():
         # filter out small contours
         contours = list(filter(lambda c: cv.contourArea(c) > 100, contours))
 
+        img_annotated = img.copy()
+
         for i, contour in enumerate(contours):
             # a, b, c, d, theta = get_contour_bounds(contour)
             # img = cv.rectangle(img, bounds[0], bounds[1], (0, 255, 0))
@@ -169,19 +111,55 @@ def main():
             #     (cropped_width / 2.0, cropped_height / 2.0), theta, 1)
             # thumbs[i] = np.cross(rot, thumbs[i])
 
+            (_, _, angle) = rot_rect = cv.minAreaRect(contour)
+            rot_rect = cv.boxPoints(rot_rect)
+            rot_rect = np.int0(rot_rect)
+
             rect = cv.boundingRect(contour)
 
-            value = get_die_value(img_grey, rect)
+            # value = get_die_value(img_grey, rect)
 
-            value_str = str(value)
-            if value is None:
-                value_str = "?"
+            # value_str = str(value)
+            # if value is None:
+            #     value_str = "?"
 
-            img = cv.rectangle(
-                img, (rect[0], rect[1]), (rect[0] + rect[2], rect[1] + rect[3]), (255, 255, 255))
+            img_annotated = cv.rectangle(
+                img_annotated, (rect[0], rect[1]), (rect[0] + rect[2], rect[1] + rect[3]), (255, 255, 255))
 
-            img = cv.putText(
-                img, value_str, (rect[0] + rect[2] + 5, rect[1] + 5), cv.FONT_HERSHEY_PLAIN, 1, (0, 255, 0))
+            img_annotated = cv.drawContours(
+                img_annotated, [rot_rect], 0, (255, 0, 0), 2)
+
+            # (x1, y1), _, (x2, y2), _ = rot_rect
+            # w = x2 - x1
+            # h = y2 - y1
+            # size = math.floor(math.sqrt(w ** 2 + h ** 2))
+            # tmp = np.zeros((size, size, 3), np.uint8)
+
+            # mask = tmp.copy()
+            # mask = cv.fillPoly(mask, [rot_rect], (255, 255, 255))
+            # mask = crop(mask, rect[0], rect[1],
+            #             rect[2], rect[3])
+
+            # tmp = cv.copyTo(img, mask, tmp)
+
+            xs = [x for [x, _] in rot_rect]
+            ys = [y for [_, y] in rot_rect]
+            p1 = (min(xs), min(ys))
+            p2 = (max(xs), max(ys))
+            w = p2[0] - p1[0]
+            h = p2[1] - p1[1]
+            print(p1, p2)
+            tmp = crop(img, p1[0], p1[1], w, h)
+
+            rot_mat = cv.getRotationMatrix2D(
+                (int((p1[0] + w)/2), int((p1[1] + h)/2)), angle, 1.0)
+            tmp = cv.warpAffine(img, rot_mat, (w, h))
+
+            cv.imshow("tmp", tmp)
+            break
+
+            # img = cv.putText(
+            #     img, value_str, (rect[0] + rect[2] + 5, rect[1] + 5), cv.FONT_HERSHEY_PLAIN, 1, (0, 255, 0))
 
             # img = cv.drawMarker(img, a, (255, 0, 0))
             # img = cv.drawMarker(img, b, (255, 255, 0))
