@@ -1,6 +1,9 @@
 import numpy as np
 import cv2 as cv
 import math
+import os
+import os.path
+import sys
 
 CAMERA_SURFACE_FRONT = 0
 CAMERA_SURFACE_BACK = 1
@@ -66,20 +69,66 @@ class Die:
         pass
 
 
+def cropCopy(img, x, y, w, h):
+    """ Returns a cropped copy of the image. """
+    return img[y:y+h, x:x+w].copy()
+
+
 def crop(img, x, y, w, h):
+    """ Returns the cropped image. """
     return img[y:y+h, x:x+w]
 
 
+def isolate_die_face(img, rect, angle):
+    """ Isolates the die face from the rest of the image. """
+    [[x1, y1], [x2, y2], [x3, y3], [x4, y4]] = rect
+
+    xs = [x1, x2, x3, x4]
+    ys = [y1, y2, y3, y4]
+
+    # the width and height are the differences between the maximum and minimum coordinates
+    w = max(xs) - min(xs)
+    h = max(ys) - min(ys)
+
+    # crop out our unrotated die face
+    rot_img = cropCopy(img, min(xs), min(ys), w, h)
+
+    # rotate the die face so it is the right way up
+    rot_mat = cv.getRotationMatrix2D((int(w / 2), int(h / 2)), angle, 1.0)
+    rot_img = cv.warpAffine(rot_img, rot_mat, (w, h))
+
+    # now the rotated die has some padding from the rotation
+    # calculate the width of the padding and crop it out
+    rot_w = int(math.sqrt((x3 - x2) ** 2 + (y3 - y2) ** 2))
+    rot_h = int(math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2))
+    rot_img = crop(rot_img, int((w - rot_w) / 2),
+                   int((h - rot_h) / 2), rot_w, rot_h)
+
+    return rot_img
+
+
+def save_die_face(img, folder='die_images'):
+    """ Saves the die face to disk. """
+    if not os.path.exists(folder):
+        os.mkdir(folder)
+
+    # TODO: finish
+
+
 def main():
-    cam = Camera(CAMERA_SURFACE_FRONT)
+    cam = Camera(CAMERA_LOGITECH)
 
     while True:
 
         # read image
         img = cam.read()
 
+        # copy the original image for annotation
+        img_annotated = img.copy()
+
         # apply gaussian blur
-        img_blurred = cv.GaussianBlur(img, (3, 3), 0)
+        # TODO: Research this function
+        img_blurred = cv.GaussianBlur(img, (3, 3), 3)
 
         # convert to greyscale
         img_grey = cv.cvtColor(img_blurred, cv.COLOR_BGR2GRAY)
@@ -94,91 +143,33 @@ def main():
         # filter out small contours
         contours = list(filter(lambda c: cv.contourArea(c) > 100, contours))
 
-        img_annotated = img.copy()
+        dice_faces = []
 
         for i, contour in enumerate(contours):
-            # a, b, c, d, theta = get_contour_bounds(contour)
-            # img = cv.rectangle(img, bounds[0], bounds[1], (0, 255, 0))
 
-            # thumbs[i] = img.copy()
-
-            # # crop
-            # thumbs[i] = thumbs[i][b[1]:d[1], a[0]:c[0]]
-
-            # # rotate
-            # cropped_height, cropped_width = thumbs[i].shape[:2]
-            # rot = cv.getRotationMatrix2D(
-            #     (cropped_width / 2.0, cropped_height / 2.0), theta, 1)
-            # thumbs[i] = np.cross(rot, thumbs[i])
-
-            (_, _, angle) = rot_rect = cv.minAreaRect(contour)
+            _, _, angle = rot_rect = cv.minAreaRect(contour)
             rot_rect = cv.boxPoints(rot_rect)
             rot_rect = np.int0(rot_rect)
 
             rect = cv.boundingRect(contour)
 
-            # value = get_die_value(img_grey, rect)
-
-            # value_str = str(value)
-            # if value is None:
-            #     value_str = "?"
-
-            img_annotated = cv.rectangle(
-                img_annotated, (rect[0], rect[1]), (rect[0] + rect[2], rect[1] + rect[3]), (255, 255, 255))
-
             img_annotated = cv.drawContours(
                 img_annotated, [rot_rect], 0, (255, 0, 0), 2)
 
-            # (x1, y1), _, (x2, y2), _ = rot_rect
-            # w = x2 - x1
-            # h = y2 - y1
-            # size = math.floor(math.sqrt(w ** 2 + h ** 2))
-            # tmp = np.zeros((size, size, 3), np.uint8)
+            img_annotated = cv.putText(
+                img_annotated, "ID: {}".format(i + 1), (rect[0] + rect[2] + 5, rect[1] + 5), cv.FONT_HERSHEY_PLAIN, 1, (0, 255, 0))
 
-            # mask = tmp.copy()
-            # mask = cv.fillPoly(mask, [rot_rect], (255, 255, 255))
-            # mask = crop(mask, rect[0], rect[1],
-            #             rect[2], rect[3])
-
-            # tmp = cv.copyTo(img, mask, tmp)
-
-            xs = [x for [x, _] in rot_rect]
-            ys = [y for [_, y] in rot_rect]
-            p1 = (min(xs), min(ys))
-            p2 = (max(xs), max(ys))
-            w = p2[0] - p1[0]
-            h = p2[1] - p1[1]
-            print(p1, p2)
-            tmp = crop(img, p1[0], p1[1], w, h)
-
-            rot_mat = cv.getRotationMatrix2D(
-                (int((p1[0] + w)/2), int((p1[1] + h)/2)), angle, 1.0)
-            tmp = cv.warpAffine(img, rot_mat, (w, h))
-
-            cv.imshow("tmp", tmp)
-            break
-
-            # img = cv.putText(
-            #     img, value_str, (rect[0] + rect[2] + 5, rect[1] + 5), cv.FONT_HERSHEY_PLAIN, 1, (0, 255, 0))
-
-            # img = cv.drawMarker(img, a, (255, 0, 0))
-            # img = cv.drawMarker(img, b, (255, 255, 0))
-            # img = cv.drawMarker(img, c, (0, 255, 255))
-            # img = cv.drawMarker(img, d, (255, 0, 255))
-            # img = cv.putText(img, "ID: {}, {:.2f} degrees".format(
-            #     i, theta), (c[0] + 10, c[1] - 10), cv.FONT_HERSHEY_PLAIN, 1, (0, 255, 0))
-
-        # overlay remaining contours on original image
-        # img = cv.drawContours(img, contours, -1, (255, 0, 0), 3)
-
-        # for k, v in thumbs.items():
-        #     cv.imshow("ID: {}".format(k), v)
+            die_face = isolate_die_face(img, rot_rect, angle)
+            dice_faces.append(die_face)
 
         cv.imshow('Canny Edge Detection', img_edges)
-        cv.imshow('Original with Contours', img)
+        cv.imshow('Original with Contours', img_annotated)
+        cv.imshow('Original with Blur', img_blurred)
 
         if cv.waitKey(1) & 0xff == ord('q'):
             break
+        elif cv.waitKey(1) & 0xff == ord(' '):
+            print("Should save images")
 
     cv.destroyAllWindows()
 
