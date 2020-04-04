@@ -3,7 +3,8 @@ import cv2 as cv
 import math
 import os
 import os.path
-import sys
+import time
+import random
 
 CAMERA_SURFACE_FRONT = 0
 CAMERA_SURFACE_BACK = 1
@@ -90,8 +91,14 @@ def isolate_die_face(img, rect, angle):
     w = max(xs) - min(xs)
     h = max(ys) - min(ys)
 
+    if w == 0 or h == 0:
+        return None
+
     # crop out our unrotated die face
     rot_img = cropCopy(img, min(xs), min(ys), w, h)
+
+    if len(rot_img) == 0:
+        return None
 
     # rotate the die face so it is the right way up
     rot_mat = cv.getRotationMatrix2D((int(w / 2), int(h / 2)), angle, 1.0)
@@ -112,7 +119,44 @@ def save_die_face(img, folder='die_images'):
     if not os.path.exists(folder):
         os.mkdir(folder)
 
-    # TODO: finish
+    # generate a unique filename for the image
+    filename = None
+    while True:
+        filename = str(int(time.time() * 1000)) + "_" + \
+            str(random.randint(0, 10000)) + ".png"
+        filename = os.path.join(folder, filename)
+        if not os.path.exists(filename):
+            break
+
+    cv.imwrite(filename, img)
+
+
+def pipeline(img, *fns):
+    for fn in fns:
+        img = fn(img)
+    return img
+
+
+def greyscale(img):
+    img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+    return img
+
+
+def blur(img):
+    # img = cv.GaussianBlur(img, (3, 3), 0)
+    img = cv.medianBlur(img, 5)
+    # img = cv.bilateralFilter(img, 3, 150, 150)
+    return img
+
+
+def threshold(img):
+    _ret, img = cv.threshold(img, 100, 255, cv.THRESH_BINARY)
+    return img
+
+
+def edges(img):
+    img = cv.Canny(img, 200, 400)
+    return img
 
 
 def main():
@@ -126,26 +170,24 @@ def main():
         # copy the original image for annotation
         img_annotated = img.copy()
 
-        # apply gaussian blur
-        # TODO: Research this function
-        img_blurred = cv.GaussianBlur(img, (3, 3), 3)
-
-        # convert to greyscale
-        img_grey = cv.cvtColor(img_blurred, cv.COLOR_BGR2GRAY)
-
-        # detect edges
-        img_edges = cv.Canny(img_grey, 200, 400)
+        # process the image
+        img_processed = pipeline(img, greyscale, threshold, blur, edges)
 
         # detect contours
         contours, _ = cv.findContours(
-            img_edges, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+            img_processed, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
 
         # filter out small contours
         contours = list(filter(lambda c: cv.contourArea(c) > 100, contours))
 
-        dice_faces = []
+        die_faces = []
+
+        # filter contours by area
+        contours = filter(lambda c: cv.contourArea(c) > 500, contours)
 
         for i, contour in enumerate(contours):
+
+            # print(i, cv.contourArea(contour))
 
             _, _, angle = rot_rect = cv.minAreaRect(contour)
             rot_rect = cv.boxPoints(rot_rect)
@@ -153,23 +195,32 @@ def main():
 
             rect = cv.boundingRect(contour)
 
+            die_face = isolate_die_face(img, rot_rect, angle)
+
+            if die_face is None:
+                continue
+
             img_annotated = cv.drawContours(
                 img_annotated, [rot_rect], 0, (255, 0, 0), 2)
 
             img_annotated = cv.putText(
                 img_annotated, "ID: {}".format(i + 1), (rect[0] + rect[2] + 5, rect[1] + 5), cv.FONT_HERSHEY_PLAIN, 1, (0, 255, 0))
 
-            die_face = isolate_die_face(img, rot_rect, angle)
-            dice_faces.append(die_face)
+            die_faces.append(die_face)
 
-        cv.imshow('Canny Edge Detection', img_edges)
+            # cv.imshow(str(i), die_face)
+
+        cv.imshow('Processed', img_processed)
         cv.imshow('Original with Contours', img_annotated)
-        cv.imshow('Original with Blur', img_blurred)
 
         if cv.waitKey(1) & 0xff == ord('q'):
             break
         elif cv.waitKey(1) & 0xff == ord(' '):
-            print("Should save images")
+            for die_face in die_faces:
+                save_die_face(die_face)
+            # cv.displayOverlay("Original with Contours", "Saved {} images".format(
+            #     str(len(die_faces))), 2000)
+            print("Saved {} images".format(str(len(die_faces))))
 
     cv.destroyAllWindows()
 
