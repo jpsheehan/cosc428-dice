@@ -3,7 +3,9 @@ from Gui import Gui, Param, Widget
 
 import numpy as np
 import cv2 as cv
+import tensorflow as tf
 
+from train import load_model
 from utilities import *
 from colors import *
 
@@ -39,6 +41,7 @@ def do_denoising(img, params, _imgs, _state):
     kernel_size = params[P_DENOISE_KERNEL]
     kernel = cv.getStructuringElement(
         cv.MORPH_RECT, (kernel_size, kernel_size))
+    img = cv.morphologyEx(img, cv.MORPH_DILATE, kernel)
     img = cv.morphologyEx(img, cv.MORPH_ERODE, kernel)
     return img
 
@@ -56,7 +59,8 @@ def do_threshold(img, params, _imgs, _state):
     """Threshold"""
     thresh = params[P_THRESHOLD_THRESHOLD]
     max_val = params[P_THRESHOLD_MAX_VAL]
-    _ret, img = cv.threshold(img, thresh, max_val, cv.THRESH_BINARY)
+    _ret, img = cv.threshold(img, thresh, max_val,
+                             cv.THRESH_BINARY_INV)
     return img
 
 
@@ -109,11 +113,13 @@ def do_annotation(edges, _params, imgs, state):
         if face is None:
             continue
 
+        estimated_value, probability = get_prob(face, state["model"])
+
         img_annotated = cv.drawContours(
             img_annotated, [rot_rect], 0, COLOR_RED, 2)
 
         img_annotated = cv.putText(
-            img_annotated, "ID: {}".format(i + 1), (rect[0] + rect[2] + 5, rect[1] + 5), cv.FONT_HERSHEY_PLAIN, 1, COLOR_GREEN)
+            img_annotated, str(estimated_value), (rect[0] + rect[2] + 5, rect[1] + 5), cv.FONT_HERSHEY_PLAIN, 3, COLOR_GREEN, thickness=3)
 
         state["faces"].append(face)
 
@@ -154,10 +160,24 @@ def key_handler(key, _imgs, state):
         state["gui_paused"] = False
 
 
+def get_prob(img, model):
+    img = do_greyscale(img, None, None, None)
+    img = cv.resize(img, IMG_SIZE)
+    probs = model(np.array([img])).numpy()[0]
+    m = None
+    v = None
+    for i, p in enumerate(probs):
+        if m is None or p > m:
+            m = p
+            v = i + 1
+    return v, m
+
+
 def main():
     """ Creates the GUI and runs the pipeline. """
 
     gui = Gui(key_handler=key_handler)
+    gui.state["model"] = load_model()
 
     widget_camera = Widget("Camera", do_camera, show_window=False)
     gui.widgets.append(widget_camera)

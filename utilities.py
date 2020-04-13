@@ -12,6 +12,8 @@ CAMERA_SURFACE_FRONT = 0
 CAMERA_SURFACE_BACK = 1
 CAMERA_LOGITECH = 2
 
+IMG_SIZE = (64, 64)
+
 
 class Camera:
     """ Provides an interface to read undistorted camera frames. """
@@ -120,6 +122,9 @@ def save_die_face(img, folder='die_images'):
     """ Saves the die face to disk. """
     if not os.path.exists(folder):
         os.mkdir(folder)
+
+    # resize the image
+    img = cv.resize(img, IMG_SIZE)
 
     # generate a unique filename for the image
     filename = None
