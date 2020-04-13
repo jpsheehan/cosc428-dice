@@ -132,9 +132,13 @@ def save_die_face(img, folder='die_images'):
 
     cv.imwrite(filename, img)
 
+    return filename
+
 
 def pipeline(img, *fns):
     """ Allows for chaining of image processing functions without intermediate variables. """
+    intermediate = {}
     for fn in fns:
-        img = fn(img)
-    return img
+        intermediate[fn.__doc__] = img = fn(img)
+        # img = fn(img)
+    return img, intermediate
