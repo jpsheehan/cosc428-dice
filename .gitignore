@@ -5,4 +5,8 @@
 /__MACOSX
 /images
 /die_images
+/training_data
+/test_data
+/new_model
+/model.ckpt
 *.pyc
