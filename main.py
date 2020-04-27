@@ -90,6 +90,18 @@ def do_edges_hough(img, params, _imgs, _state):
         img, rho, np.pi/180, thresh, minLineLength=min_line_length, maxLineGap=max_line_gap)
     return lines
 
+def get_edge_length(p1, p2):
+    """ Get the squared edge length between two points. """
+    return np.sqrt(abs(p2[1] - p1[1]) ** 2 + abs(p2[0] - p1[0]) ** 2)
+
+def is_square(rot_rect, error):
+    """ Returns true if the rotated rectangle is square (within error percent). """
+    [p1, p2, p3, p4] = rot_rect
+    e1 = get_edge_length(p1, p2)
+    e2 = get_edge_length(p2, p3)
+    diff = abs(e1 - e2) / max(e1, e2)
+    return diff <= error
+
 
 def do_annotation(edges, _params, imgs, state):
 
@@ -104,7 +116,9 @@ def do_annotation(edges, _params, imgs, state):
         rot_rect = cv.boxPoints(rot_rect)
         rot_rect = np.int0(rot_rect)
 
-        # TODO: FILTER ONLY SQUARE(ISH) RECTANGLES
+        # check if the rectangle is a square +/- 20%
+        if not is_square(rot_rect, 0.20):
+            continue
 
         rect = cv.boundingRect(contour)
 
@@ -115,11 +129,15 @@ def do_annotation(edges, _params, imgs, state):
 
         estimated_value, probability = get_prob(face, state["model"])
 
+        # if the probability is too low, we cannot be sure
+        if probability < 1000:
+            continue
+
         img_annotated = cv.drawContours(
             img_annotated, [rot_rect], 0, COLOR_RED, 2)
 
         img_annotated = cv.putText(
-            img_annotated, str(estimated_value), (rect[0] + rect[2] + 5, rect[1] + 5), cv.FONT_HERSHEY_PLAIN, 3, COLOR_GREEN, thickness=3)
+            img_annotated, "{} ({}%)".format(estimated_value, probability), (rect[0] + rect[2] + 5, rect[1] + 5), cv.FONT_HERSHEY_PLAIN, 3, COLOR_GREEN, thickness=3)
 
         state["faces"].append(face)
 
@@ -144,7 +162,7 @@ def get_contours(edges):
     contours = get_raw_contours(edges)
 
     # filter out small contours outside of our expected size range
-    contours = filter(lambda c: cv.contourArea(c) > 1000, contours)
+    contours = filter(lambda c: cv.contourArea(c) > 200, contours)
 
     return contours
 
@@ -190,7 +208,7 @@ def main():
     # gui.widgets.append(widget_denoising)
 
     widget_threshold = Widget("Threshold", do_threshold)
-    widget_threshold.params.append(Param(P_THRESHOLD_THRESHOLD, 0, 255, 150))
+    widget_threshold.params.append(Param(P_THRESHOLD_THRESHOLD, 0, 255, 210))
     widget_threshold.params.append(Param(P_THRESHOLD_MAX_VAL, 0, 255, 255))
     gui.widgets.append(widget_threshold)
 
@@ -200,7 +218,7 @@ def main():
 
     widget_edges_canny = Widget(
         "Canny Edge Detection", do_edges_canny, display_function=do_display_edges)
-    widget_edges_canny.params.append(Param(P_CANNY_THRESHOLD_1, 1, 600, 100))
+    widget_edges_canny.params.append(Param(P_CANNY_THRESHOLD_1, 1, 600, 157))
     widget_edges_canny.params.append(Param(P_CANNY_THRESHOLD_2, 1, 600, 400))
     gui.widgets.append(widget_edges_canny)
 

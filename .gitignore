@@ -10,3 +10,4 @@
 /new_model
 /model.ckpt
 *.pyc
+*.swp
