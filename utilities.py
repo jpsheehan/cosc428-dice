@@ -54,6 +54,9 @@ class Camera:
         # crop the frame
         x, y, w, h = self.roi
         processed_img = processed_img[y:y+h, x:x+w]
+        
+        # flip the image
+        processed_img = cv.flip(processed_img, 1)
 
         return processed_img
 

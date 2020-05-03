@@ -14,8 +14,9 @@ P_BLUR_KERNEL = "Kernel Size"
 P_CANNY_THRESHOLD_1 = "Lower Threshold"
 P_CANNY_THRESHOLD_2 = "Upper Threshold"
 
-P_THRESHOLD_THRESHOLD = "Threshold"
+P_THRESHOLD_BLOCK_SIZE = "Block Size"
 P_THRESHOLD_MAX_VAL = "Max. Value"
+P_THRESHOLD_CONSTANT = "Constant"
 
 P_DENOISE_KERNEL = "Kernel Size"
 
@@ -24,7 +25,7 @@ P_HOUGH_THRESHOLD = "Threshold"
 P_HOUGH_MIN_LINE_LENGTH = "Min. Line Length"
 P_HOUGH_MAX_LINE_GAP = "Max. Line Gap"
 
-cam = Camera(CAMERA_LOGITECH)
+cam = Camera(CAMERA_SURFACE_FRONT)
 
 
 def do_camera(_img, _params, _imgs, _state):
@@ -57,10 +58,11 @@ def do_blur(img, params, _imgs, _state):
 
 def do_threshold(img, params, _imgs, _state):
     """Threshold"""
-    thresh = params[P_THRESHOLD_THRESHOLD]
+    block_size = params[P_THRESHOLD_BLOCK_SIZE] * 2 + 1
     max_val = params[P_THRESHOLD_MAX_VAL]
-    _ret, img = cv.threshold(img, thresh, max_val,
-                             cv.THRESH_BINARY_INV)
+    constant = params[P_THRESHOLD_CONSTANT]
+    img = cv.adaptiveThreshold(img, max_val, cv.ADAPTIVE_THRESH_MEAN_C,
+            cv.THRESH_BINARY, block_size, constant)
     return img
 
 
@@ -136,8 +138,11 @@ def do_annotation(edges, _params, imgs, state):
         img_annotated = cv.drawContours(
             img_annotated, [rot_rect], 0, COLOR_RED, 2)
 
+        # img_annotated = cv.putText(
+        #     img_annotated, "{} ({}%)".format(estimated_value, probability), (rect[0] + rect[2] + 5, rect[1] + 5), cv.FONT_HERSHEY_PLAIN, 3, COLOR_GREEN, thickness=3)
+
         img_annotated = cv.putText(
-            img_annotated, "{} ({}%)".format(estimated_value, probability), (rect[0] + rect[2] + 5, rect[1] + 5), cv.FONT_HERSHEY_PLAIN, 3, COLOR_GREEN, thickness=3)
+            img_annotated, "{}".format(estimated_value), (rect[0] + rect[2] + 5, rect[1] + 5), cv.FONT_HERSHEY_PLAIN, 3, COLOR_GREEN, thickness=3)
 
         state["faces"].append(face)
 
@@ -208,8 +213,9 @@ def main():
     # gui.widgets.append(widget_denoising)
 
     widget_threshold = Widget("Threshold", do_threshold)
-    widget_threshold.params.append(Param(P_THRESHOLD_THRESHOLD, 0, 255, 210))
+    widget_threshold.params.append(Param(P_THRESHOLD_BLOCK_SIZE, 0, 50, 5))
     widget_threshold.params.append(Param(P_THRESHOLD_MAX_VAL, 0, 255, 255))
+    widget_threshold.params.append(Param(P_THRESHOLD_CONSTANT, -20, 20, 0))
     gui.widgets.append(widget_threshold)
 
     widget_blur = Widget("Blur", do_blur)
