@@ -25,7 +25,7 @@ P_HOUGH_THRESHOLD = "Threshold"
 P_HOUGH_MIN_LINE_LENGTH = "Min. Line Length"
 P_HOUGH_MAX_LINE_GAP = "Max. Line Gap"
 
-cam = Camera(CAMERA_SURFACE_FRONT)
+cam = Camera(0)
 
 
 def do_camera(_img, _params, _imgs, _state):
@@ -61,8 +61,9 @@ def do_threshold(img, params, _imgs, _state):
     block_size = params[P_THRESHOLD_BLOCK_SIZE] * 2 + 1
     max_val = params[P_THRESHOLD_MAX_VAL]
     constant = params[P_THRESHOLD_CONSTANT]
-    img = cv.adaptiveThreshold(img, max_val, cv.ADAPTIVE_THRESH_MEAN_C,
-            cv.THRESH_BINARY, block_size, constant)
+    _, img = cv.threshold(img, max_val, 255, cv.THRESH_BINARY)
+    # img = cv.adaptiveThreshold(img, max_val, cv.ADAPTIVE_THRESH_MEAN_C,
+    #         cv.THRESH_BINARY, block_size, constant)
     return img
 
 

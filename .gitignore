@@ -11,3 +11,6 @@
 /model.ckpt
 *.pyc
 *.swp
+*.bak
+*.bbl
+*.gz
