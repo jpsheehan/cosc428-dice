@@ -81,7 +81,7 @@
 \begin{frame}
 \frametitle{Automated Detection and Classification of Dice (1995)\footcite{Correia1995}}
 
-The ``SORTE'' system was commissioned by the Portuguese Gaming Inspection Authorities for use in casinos.
+
 
 \vspace{\baselineskip}
 
@@ -220,12 +220,12 @@ Instead of performing perfectly under specific conditions, like all prior resear
 		\item Gaussian blur
 	\end{itemize}
 	\item Canny edge detection
-	\item Contour area and shape rejection
+	\item Contour\footcite{Suzuki1985} area and shape rejection
 	\item Die face processing
 	\begin{itemize}
 		\item Face isolation
 		\item Face rotation and resize
-		\item Convolutional neural network\footnote{CNN trained on 1200 images to 97\% accuracy.} for value classification
+		\item Convolutional neural network\footnote{CNN trained on 1200 images to 97\% accuracy under ideal conditions.} for value classification
 	\end{itemize}
 \end{itemize}
 
@@ -242,8 +242,9 @@ Instead of performing perfectly under specific conditions, like all prior resear
 \begin{frame}
 \frametitle{Results}
 
-The detection method:
+Features:
 \begin{itemize}
+	\item Works in real-time.
 	\item Is rotation invariant.
 	\item Will reliably detect yellow and white dice.
 	\item Is not likely to go rogue and take over the world.
