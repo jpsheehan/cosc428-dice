@@ -1,0 +1,79 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+%\usepackage{cite}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage[backend=biber, style=ieee]{biblatex}
+
+\addbibresource{cosc428.bib}
+
+\begin{document}
+
+\title{
+	Identification and Classification of Gambling Dice using Commodity Hardware
+}
+
+\author{\IEEEauthorblockN{Jesse Patrick Sheehan}
+\IEEEauthorblockA{\textit{Department of Electrical and Computer Engineering} \\
+\textit{University of Canterbury}\\
+Christchurch, New Zealand \\
+jps111@uclive.ac.nz}
+}
+
+\maketitle
+
+\begin{abstract}
+	A simple method for identifying dice using common image processing techniques and classifying their values using a convolutional neural network is discussed.
+	This method has more general applications than its predecessors and can run on modern consumer devices.
+\end{abstract}
+
+\begin{IEEEkeywords}
+	dice, gambling, computer vision, machine learning
+\end{IEEEkeywords}
+
+\section{Introduction}
+
+Dice value detection is a valuable tool for the gaming industry.
+Common image processing and feature detection techniques can be used to identify the position of dice.
+Machine learning algoithms can be used to classify the value of the dice.
+Consumer-grade hardware devices are now more capable of handling the processing requirements of such methods.
+This article offers a simple method of detecting and classifying dice.
+
+\section{Background}
+
+Prior research in this field have taken advantage of numerous methods.
+
+The ``SORTE'' system was commissioned by the Portuguese Gaming Inspection Authorities for use in casinos \cite{Correia1995}.
+This system identifies the locations of the pips on all dice and uses this information to infer the values for each.
+However, this system requires a birds-eye view of the gaming table and dice.
+The lighting around the gaming table is also required to be set up in a very specific manner to avoid reflections on the dice themselves.
+
+The system designed by Lapanja, et al., detects dice values for a mechanical gambling machine \cite{Lapanjaa}.
+The method used makes use of color difference to identify the pips and template matching to classify each dice.
+This system is limited in that it only works in the gaming machine it was designed for.
+
+The system devised by Huang \cite{Huang2008} uses a modified unsupervised gray clustering algorithm to determine the value of each die.
+However, it requires a birds-eye view and the number of dice must be known in advance.
+
+Finally, the algorithm designed by Chung \cite{Chung2009} uses image feature detection and the least distance criterion.
+The algorithm detects the pips and then groups the pips into a configuration that makes sense.
+This method requires a birds-eye view and has only been tested on up to four dice.
+
+All of these methods have been constrained by the camera angle, the number of dice, or the background surface.
+
+\section{Method}
+
+
+\section{Results}
+
+\section{Conclusion}
+
+\printbibliography
+
+\end{document}
