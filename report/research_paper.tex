@@ -10,7 +10,9 @@
 \usepackage{textcomp}
 \usepackage{xcolor}
 \usepackage[backend=biber, style=ieee]{biblatex}
+\usepackage{tikz}
 
+\usetikzlibrary{positioning}
 \addbibresource{cosc428.bib}
 
 \begin{document}
@@ -66,9 +68,36 @@ The algorithm detects the pips and then groups the pips into a configuration tha
 This method requires a birds-eye view and has only been tested on up to four dice.
 
 All of these methods have been constrained by the camera angle, the number of dice, or the background surface.
+It is with these shortcomings in mind that the following method was devised.
 
 \section{Method}
 
+The image is obtained from some source such as a photo file, a frame from a video file, or a frame from a camera.
+Some pre-processing (figure \ref{fig:pre-processing}) is performed.
+\begin{enumerate}
+	\item The image is converted to grayscale to make subsequent processing faster. The colour information is lost, however this does not cause issues as the dice are usually black and white.
+	\item A binary threshold is performed. Again, this reduces the amount of information in the image.
+	\item A gaussian blur is applied to the image, this removes some noise.
+\end{enumerate}
+\begin{figure}
+	\centering
+	\begin{tikzpicture}[
+		rectnode/.style={rectangle, draw=black!60, fill=black!5, very thick, minimum size=5mm},
+	]
+
+		% nodes
+		\node[rectnode]	(gray) 								{Grayscale};
+		\node[rectnode] (threshold) [below=of gray] 		{Threshold};
+		\node[rectnode] (blur)  	[below=of threshold] 	{Blur};
+
+		% lines
+		\draw[->] (gray.south) -- (threshold.north);
+		\draw[->] (threshold.south) -- (blur.north);
+
+	\end{tikzpicture}
+	\caption{The image pre-processing pipeline.}
+	\label{fig:pre-processing}
+\end{figure}
 
 \section{Results}
 
