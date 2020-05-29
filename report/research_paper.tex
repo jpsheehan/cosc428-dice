@@ -77,6 +77,8 @@ It is with these shortcomings in mind that the following method was devised.
 
 \section{Method}
 
+Contrary to previous research, this algorithm detects the outside of each dice first, then isolates the die and employs a CNN to classify the value.
+
 The image is obtained from some source such as a photo file, a frame from a video file, or a frame from a camera.
 Some pre-processing (figure \ref{fig:pre-processing}) is performed.
 \begin{enumerate}
@@ -107,8 +109,9 @@ Some pre-processing (figure \ref{fig:pre-processing}) is performed.
 The image is now sufficiently clean of noise and feature detection can now take place.
 Figure \ref{fig:feature-detection} shows the feature detection process.
 \begin{enumerate}
-	\item Edge detection using the Canny \cite{canny} algorithm is used. % mention parameters
+	\item Edge detection using the Canny \cite{Canny1986} algorithm is used. % mention parameters
 	\item Contours are then detected using the algorithm described by Suzuki, et al. \cite{Suzuki1985}.
+	\item Contours are rejected if they don't have four points (i.e. are not quadrilateral).
 	\item Contours are rejected if they are too large or too small.
 	\item Contours are then filtered by their shape. The shape rejection filter (algorithm \ref{alg:shape-rejection}) will reject shapes that are not square enough.
 \end{enumerate}
@@ -121,8 +124,8 @@ Figure \ref{fig:feature-detection} shows the feature detection process.
 		\REQUIRE $P_n$ be the set of points in the rectangle
 		\STATE $E_{12} \leftarrow ||P_2 - P_1||$
 		\STATE $E_{34} \leftarrow ||P_4 - P_3||$
-		\STATE $\Delta = \frac{|E_{12} - E_{34}|}{max(E_{12}, E_{34})}$
-		\IF {$\delta \leq \Delta$} \RETURN \TRUE \ELSE \RETURN \FALSE \ENDIF
+		\STATE $\Delta = \frac{|E_{12} - E_{34}|}{\textnormal{max}(E_{12}, E_{34})}$
+		\IF {$\Delta \leq \delta$} \RETURN \TRUE \ELSE \RETURN \FALSE \ENDIF
 	\end{algorithmic}
 \end{algorithm}
 \begin{figure}
@@ -146,6 +149,17 @@ Figure \ref{fig:feature-detection} shows the feature detection process.
 	\label{fig:feature-detection}
 \end{figure}
 
+The location and angle of the die face is now known within the original image.
+Each die face must now be transformed before the CNN can be applied:
+\begin{enumerate}
+	\item Crop die face from the grayscale image obtained earlier.
+	\item Rotate the image so that it lies flat against the vertical and horizontal axes.
+	\item Scale the image so that it is 64 x 64 pixels (this is the image size that the CNN has been trained on).
+	\item Apply the CNN model to the remaining image. This will produce a vector of probabilities that relate to each possible value (1 - 6).
+	\item Select the most probable value. 
+		If this value is below a specific threshold then the die cannot be classified.
+		Otherwise, its value has likely been found.
+\end{enumerate}
 \section{Results}
 
 \section{Conclusion}
