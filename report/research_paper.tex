@@ -11,6 +11,8 @@
 \usepackage{xcolor}
 \usepackage[backend=biber, style=ieee]{biblatex}
 \usepackage{tikz}
+\usepackage{algorithm}
+\usepackage{setspace}
 
 \usetikzlibrary{positioning}
 \addbibresource{cosc428.bib}
@@ -21,11 +23,14 @@
 	Identification and Classification of Gambling Dice using Commodity Hardware
 }
 
-\author{\IEEEauthorblockN{Jesse Patrick Sheehan}
-\IEEEauthorblockA{\textit{Department of Electrical and Computer Engineering} \\
-\textit{University of Canterbury}\\
-Christchurch, New Zealand \\
-jps111@uclive.ac.nz}
+\author{
+	\IEEEauthorblockN{Jesse Patrick Sheehan}
+	\IEEEauthorblockA{
+		\textit{Department of Electrical and Computer Engineering} \\
+		\textit{University of Canterbury}\\
+		Christchurch, New Zealand \\
+		jps111@uclive.ac.nz
+	}
 }
 
 \maketitle
@@ -91,12 +96,54 @@ Some pre-processing (figure \ref{fig:pre-processing}) is performed.
 		\node[rectnode] (blur)  	[below=of threshold] 	{Blur};
 
 		% lines
-		\draw[->] (gray.south) -- (threshold.north);
-		\draw[->] (threshold.south) -- (blur.north);
+		\draw[thick, ->] (gray.south) -- (threshold.north);
+		\draw[thick, ->] (threshold.south) -- (blur.north);
 
 	\end{tikzpicture}
 	\caption{The image pre-processing pipeline.}
 	\label{fig:pre-processing}
+\end{figure}
+
+The image is now sufficiently clean of noise and feature detection can now take place.
+Figure \ref{fig:feature-detection} shows the feature detection process.
+\begin{enumerate}
+	\item Edge detection using the Canny \cite{canny} algorithm is used. % mention parameters
+	\item Contours are then detected using the algorithm described by Suzuki, et al. \cite{Suzuki1985}.
+	\item Contours are rejected if they are too large or too small.
+	\item Contours are then filtered by their shape. The shape rejection filter (algorithm \ref{alg:shape-rejection}) will reject shapes that are not square enough.
+\end{enumerate}
+\begin{algorithm}
+	\setstretch{1.35}
+	\caption{The shape rejection filter as pseudocode.}
+	\label{alg:shape-rejection}
+	\begin{algorithmic}
+		\REQUIRE $0 \leq \delta \leq 1$ be the acceptable error factor
+		\REQUIRE $P_n$ be the set of points in the rectangle
+		\STATE $E_{12} \leftarrow ||P_2 - P_1||$
+		\STATE $E_{34} \leftarrow ||P_4 - P_3||$
+		\STATE $\Delta = \frac{|E_{12} - E_{34}|}{max(E_{12}, E_{34})}$
+		\IF {$\delta \leq \Delta$} \RETURN \TRUE \ELSE \RETURN \FALSE \ENDIF
+	\end{algorithmic}
+\end{algorithm}
+\begin{figure}
+	\centering
+	\begin{tikzpicture}[
+		rectnode/.style={rectangle, draw=black!60, fill=black!15, very thick, minimum size=5mm},
+	]
+		
+		% nodes
+		\node[rectnode] (edge)							{Edge Detection};
+		\node[rectnode] (contour) 	[below=of edge] 	{Contour Detection};
+		\node[rectnode] (size)		[below=of contour] 	{Contour Size Rejection};
+		\node[rectnode] (shape)		[below=of size]		{Contour Shape Rejection};
+
+		% lines
+		\draw[thick, ->] (edge.south) -- (contour.north);
+		\draw[thick, ->] (contour.south) -- (size.north);
+		\draw[thick, ->] (size.south) -- (shape.north);
+	\end{tikzpicture}
+	\caption{The image feature processing pipeline.}
+	\label{fig:feature-detection}
 \end{figure}
 
 \section{Results}
