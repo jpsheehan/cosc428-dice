@@ -25,8 +25,8 @@ P_HOUGH_THRESHOLD = "Threshold"
 P_HOUGH_MIN_LINE_LENGTH = "Min. Line Length"
 P_HOUGH_MAX_LINE_GAP = "Max. Line Gap"
 
-cam = Camera(0)
-
+# cam = Camera(0)
+cam = Image("captures/04.jpg")
 
 def do_camera(_img, _params, _imgs, _state):
     return cam.read()
@@ -133,8 +133,8 @@ def do_annotation(edges, _params, imgs, state):
         estimated_value, probability = get_prob(face, state["model"])
 
         # if the probability is too low, we cannot be sure
-        if probability < 1000:
-            continue
+#         if probability < 1000:
+ #            continue
 
         img_annotated = cv.drawContours(
             img_annotated, [rot_rect], 0, COLOR_RED, 2)
@@ -151,8 +151,8 @@ def do_annotation(edges, _params, imgs, state):
     noun = "dice"
     if len(state["faces"]) == 1:
         noun = "die"
-    cv.putText(img_annotated, "Found {} {}!".format(str(len(state["faces"])), noun),
-               (0, img_annotated.shape[0]), cv.FONT_HERSHEY_PLAIN, 3, COLOR_WHITE, 2)
+    # cv.putText(img_annotated, "Found {} {}!".format(str(len(state["faces"])), noun),
+               # (0, img_annotated.shape[0]), cv.FONT_HERSHEY_PLAIN, 3, COLOR_WHITE, 2)
 
     return img_annotated
 
@@ -215,18 +215,18 @@ def main():
 
     widget_threshold = Widget("Threshold", do_threshold)
     widget_threshold.params.append(Param(P_THRESHOLD_BLOCK_SIZE, 0, 50, 5))
-    widget_threshold.params.append(Param(P_THRESHOLD_MAX_VAL, 0, 255, 255))
+    widget_threshold.params.append(Param(P_THRESHOLD_MAX_VAL, 0, 255, 160))
     widget_threshold.params.append(Param(P_THRESHOLD_CONSTANT, -20, 20, 0))
     gui.widgets.append(widget_threshold)
 
     widget_blur = Widget("Blur", do_blur)
-    widget_blur.params.append(Param(P_BLUR_KERNEL, 0, 20, 1))
+    widget_blur.params.append(Param(P_BLUR_KERNEL, 0, 20, 4))
     gui.widgets.append(widget_blur)
 
     widget_edges_canny = Widget(
         "Canny Edge Detection", do_edges_canny, display_function=do_display_edges)
-    widget_edges_canny.params.append(Param(P_CANNY_THRESHOLD_1, 1, 600, 157))
-    widget_edges_canny.params.append(Param(P_CANNY_THRESHOLD_2, 1, 600, 400))
+    widget_edges_canny.params.append(Param(P_CANNY_THRESHOLD_1, 1, 600, 110))
+    widget_edges_canny.params.append(Param(P_CANNY_THRESHOLD_2, 1, 600, 320))
     gui.widgets.append(widget_edges_canny)
 
     # widget_edges_hough = Widget("Hough Line Detection", do_edges_hough, show_image=False)

@@ -13,9 +13,12 @@
 \usepackage{tikz}
 \usepackage{algorithm}
 \usepackage{setspace}
+\usepackage{xcolor}
+\usepackage{graphicx}
 
 \usetikzlibrary{positioning}
 \addbibresource{cosc428.bib}
+\graphicspath{ {./images/} }
 
 \begin{document}
 
@@ -36,8 +39,11 @@
 \maketitle
 
 \begin{abstract}
-	A simple method for identifying dice using common image processing techniques and classifying their values using a convolutional neural network is discussed.
-	This method has more general applications than its predecessors and can run on modern consumer devices.
+	This paper proposes a method to identify dice values using image processing and machine learning techniques.
+	Prior research uses the pips of a die to determine its value, whereas the proposed method detects the outline of the die.
+	Canny's edge detection and Suzuki's contour tracing algorithms were used to extract die faces from an image.
+	A convolutional neural network was used to classify these die faces and to provide a probable number value.
+	\textcolor{red}{Close the abstract by mentioning at least one result number (and hopefully a comparison with prior research results).}
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -54,58 +60,67 @@ This article offers a simple method of detecting and classifying dice.
 
 \section{Background}
 
+% Rather than just a summary of prior related research, write a critical review - that is, mention limitations of any prior research/algorithms cited.
+
 Prior research in this field have taken advantage of numerous methods.
 
 The ``SORTE'' system was commissioned by the Portuguese Gaming Inspection Authorities for use in casinos \cite{Correia1995}.
-This system identifies the locations of the pips on all dice and uses this information to infer the values for each.
-However, this system requires a birds-eye view of the gaming table and dice.
-The lighting around the gaming table is also required to be set up in a very specific manner to avoid reflections on the dice themselves.
+It identified the locations of the pips on all dice and uses spatial locality to assign values to each.
+However, this system required specific dice, a birds-eye view of the surface, and a careful ambient lighting setup.
 
 The system designed by Lapanja, et al., detects dice values for a mechanical gambling machine \cite{Lapanjaa}.
-The method used makes use of color difference to identify the pips and template matching to classify each dice.
-This system is limited in that it only works in the gaming machine it was designed for.
+It uses color difference to identify the pips and template matching to classify the value of each die.
+This method requires a birds-eye view, a high-contrast background surface, and relies on hard-coded masks for classification.
 
-The system devised by Huang \cite{Huang2008} uses a modified unsupervised gray clustering algorithm to determine the value of each die.
-However, it requires a birds-eye view and the number of dice must be known in advance.
+The system devised by Huang \cite{Huang2008} uses a modified unsupervised gray clustering algorithm. 
+However, it requires a birds-eye view, a high-contrast background, and the number of dice to be known in advance.
 
-Finally, the algorithm designed by Chung \cite{Chung2009} uses image feature detection and the least distance criterion.
-The algorithm detects the pips and then groups the pips into a configuration that makes sense.
+Finally, the method proposed by Chung \cite{Chung2009} uses the least distance criterion to classify die values.
+This method detects the pips and then groups the pips into valid configurations based on the relative distance between each pip.
 This method requires a birds-eye view and has only been tested on up to four dice.
 
-All of these methods have been constrained by the camera angle, the number of dice, or the background surface.
-It is with these shortcomings in mind that the following method was devised.
+All of these methods have been constrained by either the camera angle, the number of dice, or the background surface.
 
 \section{Method}
 
-Contrary to previous research, this algorithm detects the outside of each dice first, then isolates the die and employs a CNN to classify the value.
+Contrary to previous research, this method detects the outside of each dice first, then isolates each die and employs a CNN to classify the value.
 
-The image is obtained from some source such as a photo file, a frame from a video file, or a frame from a camera.
-Some pre-processing (figure \ref{fig:pre-processing}) is performed.
+\subsection{Image Pre-processing}
+
+The image (figure \ref{fig:original}) is obtained from a source such as a file or video stream.
+Some pre-processing (figure \ref{fig:pre-processing}) is performed to remove extraneous information:
 \begin{enumerate}
-	\item The image is converted to grayscale to make subsequent processing faster. The colour information is lost, however this does not cause issues as the dice are usually black and white.
-	\item A binary threshold is performed. Again, this reduces the amount of information in the image.
-	\item A gaussian blur is applied to the image, this removes some noise.
+	\item The image is converted to grayscale to make subsequent processing faster. 
+	\item A binary threshold is performed. Pixel values below 160 are set to black, and the remainder, to white.
+	\item A gaussian blur is applied to the image. A kernel size of 5 was used.
 \end{enumerate}
 \begin{figure}
 	\centering
-	\begin{tikzpicture}[
-		rectnode/.style={rectangle, draw=black!60, fill=black!5, very thick, minimum size=5mm},
-	]
-
-		% nodes
-		\node[rectnode]	(gray) 								{Grayscale};
-		\node[rectnode] (threshold) [below=of gray] 		{Threshold};
-		\node[rectnode] (blur)  	[below=of threshold] 	{Blur};
-
-		% lines
-		\draw[thick, ->] (gray.south) -- (threshold.north);
-		\draw[thick, ->] (threshold.south) -- (blur.north);
-
-	\end{tikzpicture}
-	\caption{The image pre-processing pipeline.}
-	\label{fig:pre-processing}
+	\includegraphics[width=0.3\textwidth]{original}
+	\caption{The original image from a webcam.}
+	\label{fig:original}
 \end{figure}
+%\begin{figure}
+%	\centering
+%	\begin{tikzpicture}[
+%		rectnode/.style={rectangle, draw=black!60, fill=black!5, very thick, minimum size=5mm},
+%	]
+%
+%		% nodes
+%		\node[rectnode]	(gray) 								{Grayscale};
+%		\node[rectnode] (threshold) [below=of gray] 		{Threshold};
+%		\node[rectnode] (blur)  	[below=of threshold] 	{Blur};
+%
+%		% lines
+%		\draw[thick, ->] (gray.south) -- (threshold.north);
+%		\draw[thick, ->] (threshold.south) -- (blur.north);
+%
+%	\end{tikzpicture}
+%	\caption{The image pre-processing pipeline.}
+%	\label{fig:pre-processing}
+%\end{figure}
 
+\subsection{Die Face Detection}
 The image is now sufficiently clean of noise and feature detection can now take place.
 Figure \ref{fig:feature-detection} shows the feature detection process.
 \begin{enumerate}
@@ -149,6 +164,7 @@ Figure \ref{fig:feature-detection} shows the feature detection process.
 	\label{fig:feature-detection}
 \end{figure}
 
+\subsection{Die Face Transformation}
 The location and angle of the die face is now known within the original image.
 Each die face must now be transformed before the CNN can be applied:
 \begin{enumerate}
@@ -160,6 +176,9 @@ Each die face must now be transformed before the CNN can be applied:
 		If this value is below a specific threshold then the die cannot be classified.
 		Otherwise, its value has likely been found.
 \end{enumerate}
+
+\subsection{Die Classification}
+
 \section{Results}
 
 \section{Conclusion}

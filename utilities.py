@@ -14,6 +14,14 @@ CAMERA_LOGITECH = 2
 
 IMG_SIZE = (64, 64)
 
+class Image:
+    """ Provides an interface to read an image. """
+
+    def __init__(self, filename):
+        self.filename = filename
+
+    def read(self):
+        return cv.imread(self.filename)
 
 class Camera:
     """ Provides an interface to read undistorted camera frames. """
