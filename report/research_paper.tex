@@ -88,7 +88,7 @@ Contrary to previous research, this method detects the outside of each dice firs
 \subsection{Image Pre-processing}
 
 The image (figure \ref{fig:original}) is obtained from a source such as a file or video stream.
-Some pre-processing (figure \ref{fig:pre-processing}) is performed to remove extraneous information:
+Some pre-processing is performed to remove extraneous information:
 \begin{enumerate}
 	\item The image is converted to grayscale to make subsequent processing faster. 
 	\item A binary threshold is performed. Pixel values below 160 are set to black, and the remainder, to white.
@@ -100,28 +100,10 @@ Some pre-processing (figure \ref{fig:pre-processing}) is performed to remove ext
 	\caption{The original image from a webcam.}
 	\label{fig:original}
 \end{figure}
-%\begin{figure}
-%	\centering
-%	\begin{tikzpicture}[
-%		rectnode/.style={rectangle, draw=black!60, fill=black!5, very thick, minimum size=5mm},
-%	]
-%
-%		% nodes
-%		\node[rectnode]	(gray) 								{Grayscale};
-%		\node[rectnode] (threshold) [below=of gray] 		{Threshold};
-%		\node[rectnode] (blur)  	[below=of threshold] 	{Blur};
-%
-%		% lines
-%		\draw[thick, ->] (gray.south) -- (threshold.north);
-%		\draw[thick, ->] (threshold.south) -- (blur.north);
-%
-%	\end{tikzpicture}
-%	\caption{The image pre-processing pipeline.}
-%	\label{fig:pre-processing}
-%\end{figure}
 
 \subsection{Die Face Detection}
-The image is now sufficiently clean of noise and feature detection can now take place.
+
+The image (figure \ref{fig:blurred}) is now sufficiently clean of noise and feature detection can now take place.
 Figure \ref{fig:feature-detection} shows the feature detection process.
 \begin{enumerate}
 	\item Edge detection using the Canny \cite{Canny1986} algorithm is used. % mention parameters
@@ -145,40 +127,56 @@ Figure \ref{fig:feature-detection} shows the feature detection process.
 \end{algorithm}
 \begin{figure}
 	\centering
-	\begin{tikzpicture}[
-		rectnode/.style={rectangle, draw=black!60, fill=black!15, very thick, minimum size=5mm},
-	]
-		
-		% nodes
-		\node[rectnode] (edge)							{Edge Detection};
-		\node[rectnode] (contour) 	[below=of edge] 	{Contour Detection};
-		\node[rectnode] (size)		[below=of contour] 	{Contour Size Rejection};
-		\node[rectnode] (shape)		[below=of size]		{Contour Shape Rejection};
-
-		% lines
-		\draw[thick, ->] (edge.south) -- (contour.north);
-		\draw[thick, ->] (contour.south) -- (size.north);
-		\draw[thick, ->] (size.south) -- (shape.north);
-	\end{tikzpicture}
-	\caption{The image feature processing pipeline.}
-	\label{fig:feature-detection}
+	\includegraphics[width=0.3\textwidth]{blur}
+	\caption{The image after pre-processing has occurred.}
+	\label{fig:blurred}
 \end{figure}
+%\begin{figure}
+%	\centering
+%	\begin{tikzpicture}[
+%		rectnode/.style={rectangle, draw=black!60, fill=black!15, very thick, minimum size=5mm},
+%	]
+%		
+%		% nodes
+%		\node[rectnode] (edge)							{Edge Detection};
+%		\node[rectnode] (contour) 	[below=of edge] 	{Contour Detection};
+%		\node[rectnode] (size)		[below=of contour] 	{Contour Size Rejection};
+%		\node[rectnode] (shape)		[below=of size]		{Contour Shape Rejection};
+%
+%		% lines
+%		\draw[thick, ->] (edge.south) -- (contour.north);
+%		\draw[thick, ->] (contour.south) -- (size.north);
+%		\draw[thick, ->] (size.south) -- (shape.north);
+%	\end{tikzpicture}
+%	\caption{The image feature processing pipeline.}
+%	\label{fig:feature-detection}
+%\end{figure}
 
 \subsection{Die Face Transformation}
-The location and angle of the die face is now known within the original image.
+
+The location and angle of the die face is now known within the original image (figure \ref{fig:canny}).
 Each die face must now be transformed before the CNN can be applied:
-\begin{enumerate}
-	\item Crop die face from the grayscale image obtained earlier.
-	\item Rotate the image so that it lies flat against the vertical and horizontal axes.
-	\item Scale the image so that it is 64 x 64 pixels (this is the image size that the CNN has been trained on).
-	\item Apply the CNN model to the remaining image. This will produce a vector of probabilities that relate to each possible value (1 - 6).
-	\item Select the most probable value. 
-		If this value is below a specific threshold then the die cannot be classified.
-		Otherwise, its value has likely been found.
-\end{enumerate}
+
+Each square region must be cropped from the original image and rotated so that it lies flat upon the cartesian axis.
+Rotation is performed with an affine rotation transformation.
+Each image must be scaled to 64 x 64 pixels as this is what the CNN was trained on.
+\begin{figure}
+	\centering
+	\includegraphics[width=0.3\textwidth]{canny}
+	\caption{The original image with the contours highlighted.}
+	\label{fig:canny}
+\end{figure}
 
 \subsection{Die Classification}
 
+The die faces have been isolated (figure \ref{fig:faces}) and can now be passed to the CNN for classification.
+
+\begin{figure}
+	\centering
+	\includegraphics[width=0.2\textwidth]{faces}
+	\caption{The die faces after transformation.}
+	\label{fig:faces}
+\end{figure}
 \section{Results}
 
 \section{Conclusion}
