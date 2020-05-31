@@ -17,6 +17,7 @@
 \usepackage{xcolor}
 \usepackage{graphicx}
 \usepackage[binary-units]{siunitx}
+\usepackage{listings}
 
 \usetikzlibrary{positioning}
 \addbibresource{cosc428.bib}
@@ -83,21 +84,15 @@ Finally, the method proposed by Chung \cite{Chung2009} uses the least distance c
 This method detects the pips and then groups the pips into valid configurations based on the relative distance between each pip.
 This method requires a birds-eye view and has only been tested on up to four dice.
 
-All of these methods have been constrained by either the camera angle, the number of dice, or the background surface.
+All of these methods rely on detecting the pips and have been constrained by either the camera angle, the number of dice, or the background surface.
+The proposed method focuses on detecting the die outline and then classifying the value using a convolutional neural network (CNN).
 
 \section{Method}
-
-Contrary to previous research, this method detects the outside of each dice first, then isolates each die and employs a CNN to classify the value.
 
 \subsection{Image Pre-processing}
 
 The image (figure \ref{fig:original}) is obtained from a source such as a file or video stream.
-Some pre-processing is performed to remove extraneous information:
-\begin{enumerate}
-	\item The image is converted to grayscale to make subsequent processing faster. 
-	\item A binary threshold is performed. Pixel values below 160 are set to black, and the remainder, to white.
-	\item A gaussian blur is applied to the image. A kernel size of 5 was used.
-\end{enumerate}
+Pre-processing is performed to remove extraneous information from the image.
 \begin{figure}
 	\centering
 	\includegraphics[width=0.4\textwidth]{original}
@@ -105,9 +100,43 @@ Some pre-processing is performed to remove extraneous information:
 	\label{fig:original}
 \end{figure}
 
+% GRAYSCALE
+The image is converted to a grayscale color-space.
+Equation \ref{eq:rgb2gray} is used to convert an RGB image into grayscale.
+It is based on the luminance formula from ``Recommendation BT.601'' \cite{R2011}.
+Performing subsequent operations on a grayscale image increases speed at the cost of losing colour information.
+\begin{align}
+	\textnormal{gray}(R, G, B) &= 0.299 \cdot R + 0.587 \cdot G + 0.114 \cdot B \label{eq:rgb2gray}
+\end{align}
+
+% BINARY THRESHOLD
+A binary threshold is performed (equation \ref{eq:threshold}).
+This reduces the amount of noise present in the image and draws attention to sharp edges.
+This step is required for the edge detection step.
+\begin{align}
+	\textnormal{threshold}(x) &= \begin{cases}
+		\textnormal{black} & x \leq 160 \\
+		\textnormal{white} & \textnormal{otherwise}
+	\end{cases} \label{eq:threshold}
+\end{align}
+
+% GAUSSIAN BLUR
+Smoothing is applied to the image to reduce the effect of any remaining noise.
+This is typically acheived with a 2-dimensional convolutional filter.
+A gaussian kernel of size 5 was chosen for the convolution (equation \ref{eq:kernel}). 
+The image (figure \ref{fig:blurred}) is now sufficiently clean of noise and feature detection can take place.
+\begin{align}
+	K = \{0.0625, 0.25, 0.375, 0.25, 0.0625\}^T \label{eq:kernel}
+\end{align}
+\begin{figure}
+	\centering
+	\includegraphics[width=0.4\textwidth]{blur}
+	\caption{The image after pre-processing.}
+	\label{fig:blurred}
+\end{figure}
+
 \subsection{Die Face Detection}
 
-The image (figure \ref{fig:blurred}) is now sufficiently clean of noise and feature detection can now take place.
 The Canny edge detector \cite{Canny1986} is used to find the edges of the dice.
 This will also detect undesirable ``edges'' on the flat background surface due to variations in lighting and texture.
 The Suzuki contour tracing algorithm \cite{Suzuki1985} joins the continuous edges.
@@ -115,27 +144,35 @@ The contours are then kept if they have the following properties:
 \begin{itemize}
 	\item They have four points (i.e. are quadrilateral).
 	\item They have an area greater than 200 pixels square. This removes any small contours that are artifacts of the lighting.
-	\item They are square-ish. The shape rejection filter (algorithm \ref{alg:shape-rejection}) will reject contours that are not square enough. The proposed implementation uses $\delta = 20\%$.
+	\item They are square-ish. The shape rejection filter (listing \ref{lst:shape-rejection}) will reject contours that are not square enough.
+		The proposed implementation uses an acceptable error of 20\%.
 \end{itemize}
-\begin{algorithm}
-	\setstretch{1.35}
-	\caption{The shape rejection filter as pseudocode.}
-	\label{alg:shape-rejection}
-	\begin{algorithmic}
-		\REQUIRE $0 \leq \delta \leq 1$ be the acceptable error factor
-		\REQUIRE $P_n$ be the set of points in the quadrilateral
-		\STATE $E_{12} \leftarrow ||P_2 - P_1||$
-		\STATE $E_{34} \leftarrow ||P_4 - P_3||$
-		\STATE $\Delta = \frac{|E_{12} - E_{34}|}{\textnormal{max}(E_{12}, E_{34})}$
-		\IF {$\Delta \leq \delta$} \RETURN \TRUE \ELSE \RETURN \FALSE \ENDIF
-	\end{algorithmic}
-\end{algorithm}
-\begin{figure}
-	\centering
-	\includegraphics[width=0.4\textwidth]{blur}
-	\caption{The image after pre-processing has occurred.}
-	\label{fig:blurred}
-\end{figure}
+\begin{lstlisting}[language=python, caption={The shape rejection filter in Python.}, label={lst:shape-rejection}]
+def get_edge_length(p1, p2):
+    return np.sqrt(
+    	abs(p2[1] - p1[1]) ** 2 +
+    	abs(p2[0] - p1[0]) ** 2)
+
+def is_square(points, error):
+    [p1, p2, p3, p4] = points
+    e1 = get_edge_length(p1, p2)
+    e2 = get_edge_length(p2, p3)
+    diff = abs(e1 - e2) / max(e1, e2)
+    return diff <= error
+\end{lstlisting}
+%\begin{algorithm}
+%	\setstretch{1.35}
+%	\caption{The shape rejection filter as pseudocode.}
+%	\label{alg:shape-rejection}
+%	\begin{algorithmic}
+%		\REQUIRE $0 \leq \delta \leq 1$ be the acceptable error factor
+%		\REQUIRE $P_n$ be the set of points in the quadrilateral
+%		\STATE $E_{12} \leftarrow ||P_2 - P_1||$
+%		\STATE $E_{34} \leftarrow ||P_4 - P_3||$
+%		\STATE $\Delta = \frac{|E_{12} - E_{34}|}{\textnormal{max}(E_{12}, E_{34})}$
+%		\IF {$\Delta \leq \delta$} \RETURN \TRUE \ELSE \RETURN \FALSE \ENDIF
+%	\end{algorithmic}
+%\end{algorithm}
 %\begin{figure}
 %	\centering
 %	\begin{tikzpicture}[
