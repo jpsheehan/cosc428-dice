@@ -32,11 +32,18 @@
 \author{
 	\IEEEauthorblockN{Jesse Patrick Sheehan}
 	\IEEEauthorblockA{
-		Supervisor: Richard Green \\
 		\textit{Department of Electrical and Computer Engineering} \\
 		\textit{University of Canterbury}\\
 		Christchurch, New Zealand \\
 		jps111@uclive.ac.nz
+	}
+	\and
+	\IEEEauthorblockN{Richard Green}
+	\IEEEauthorblockA{
+		\textit{Department of Computer Science and Software Engineering} \\
+		\textit{University of Canterbury}\\
+		Christchurch, New Zealand \\
+		richard.green@canterbury.ac.nz
 	}
 }
 
@@ -91,7 +98,7 @@ The proposed method focuses on detecting the die outline and then classifying th
 
 The proposed method is arranged in several stages.
 Figure \ref{fig:stages} illustrates the process of classifying the dice values from an image. 
-\begin{figure}
+\begin{figure}[H]
 	\centering
 	\begin{tikzpicture}[
 		rectnode/.style={rectangle, draw=black!60, fill=black!15, very thick, minimum size=5mm},
@@ -118,7 +125,7 @@ Figure \ref{fig:stages} illustrates the process of classifying the dice values f
 
 The image (figure \ref{fig:original}) is obtained from a source such as a file or video stream.
 Pre-processing is performed to remove extraneous information from the image.
-\begin{figure}
+\begin{figure}[H]
 	\centering
 	\includegraphics[width=0.4\textwidth]{original}
 	\caption{The original image from a webcam.}
@@ -136,7 +143,7 @@ Performing subsequent operations on a grayscale image increases speed at the cos
 
 % BINARY THRESHOLD
 A binary threshold is performed (equation \ref{eq:threshold}).
-This reduces the amount of noise present in the image and draws attention to sharp edges.
+This reduces the amount of noise present in the image and draws attention to sharp edges (figure \ref{fig:threshold}).
 This step is required for the edge detection step.
 \begin{align}
 	\textnormal{threshold}(x) &= \begin{cases}
@@ -144,6 +151,12 @@ This step is required for the edge detection step.
 		\textnormal{white} & \textnormal{otherwise}
 	\end{cases} \label{eq:threshold}
 \end{align}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.4\textwidth]{threshold}
+	\caption{The image after thresholding.}
+	\label{fig:threshold}
+\end{figure}
 
 % GAUSSIAN BLUR
 Smoothing is applied to the image to reduce the effect of any remaining noise.
@@ -153,7 +166,7 @@ The image (figure \ref{fig:blurred}) is now sufficiently clean of noise and feat
 \begin{align}
 	K = \{0.0625, 0.25, 0.375, 0.25, 0.0625\}^T \label{eq:kernel}
 \end{align}
-\begin{figure}
+\begin{figure}[H]
 	\centering
 	\includegraphics[width=0.4\textwidth]{blur}
 	\caption{The image after pre-processing.}
@@ -177,7 +190,7 @@ Finally, a double threshold is applied to ensure that only the relevant edges ar
 Any pixels that have a gradient intensity above 320 are considered to be edges.
 Any pixels that have a gradient intensity above 110 and are connected to an edge are also considered edges.
 A small number of edges that are not related to the dice remain due to variations in lighting and background surface texture (figure \ref{fig:canny}).
-\begin{figure}
+\begin{figure}[H]
 	\centering
 	\includegraphics[width=0.4\textwidth]{canny}
 	\caption{The original image with the edges highlighted.}
@@ -209,27 +222,33 @@ def is_square(points, error):
     diff = abs(e1 - e2) / max(e1, e2)
     return diff <= error
 \end{lstlisting}
-
+After contour filtering is performed only the dice are left (figure \ref{fig:contour}). 
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.4\textwidth]{contours}
+	\caption{The original image with the remaining contours highlighted.}
+	\label{fig:contour}
+\end{figure}
 
 \subsection{Die Face Transformation}
 
 The location and angle of the die face is now known within the original image (figure \ref{fig:canny}).
-Each die face must now be transformed before the CNN can be applied:
+Each die face must now be transformed before the CNN can be applied.
 
 Each square region must be cropped from the original image and rotated so that it lies flat upon the cartesian axis.
 Rotation is performed with an affine rotation transformation.
 Each image must be scaled to 64x64 pixels for classification.
 The die faces have been isolated (figure \ref{fig:faces}) and can now be passed to the CNN for classification.
-\begin{figure}
+\begin{figure}[H]
 	\centering
-	\includegraphics[width=0.2\textwidth]{faces}
+	\includegraphics[width=0.3\textwidth]{faces}
 	\caption{The die faces after transformation.}
 	\label{fig:faces}
 \end{figure}
 
 \subsection{Machine Learning}
 
-Machine learning algorithms are often used to solve problems that would be difficult to solve using traditional computing methods.
+Machine learning algorithms are often used to solve problems that would be difficult to solve using traditional computing methods \cite{Goodfellow2016}.
 A CNN is a class of deep neural networks that has many applications in computer vision, speech recognition, and many other fields \cite{Pena2014}\cite{Madabhushi2016}\cite{Lawrence1997}\cite{Kalchbrenner2014}.
 A deep neural network is designed with many layers where the information will pass through.
 A model will then be trained on a large dataset with known parameters.
@@ -244,7 +263,7 @@ Each image is grayscale and 64x64 pixels in size.
 
 The CNN determines the probability that the isolated die face has a specific number value.
 The largest of these values is selected and the original image is annotated with the most likely number for each dice (figure \ref{fig:annotated}).
-\begin{figure}
+\begin{figure}[H]
 	\centering
 	\includegraphics[width=0.4\textwidth]{annotated}
 	\caption{The final image with annotations.}
@@ -261,9 +280,9 @@ The webcam was setup $\SI{37}{\centi\metre}$ above the surface looking directly 
 Two white dice (black pips) and two yellow dice (black pips) were rolled 50 times.
 The webcam was paused while the results were recorded in a spreadsheet.
 The distribution of the dice rolls was relatively equal between the different values (figure \ref{fig:results}).
-\begin{figure}
+\begin{figure}[H]
 	\centering
-	\includegraphics[width=0.4\textwidth]{results}
+	\includegraphics[width=0.5\textwidth]{results}
 	\caption{The distribution of the 200 dice rolls.}
 	\label{fig:results}
 \end{figure}
@@ -272,6 +291,10 @@ Over the 200 rolls, $\SI{95.0}{\percent}$ of the dice were detected, and $\SI{95
 This yields an overall accuracy of $\SI{90.7}{\percent}$.
 
 \section{Conclusion}
+
+The proposed method yields an accuracy of $\SI{90.7}{\percent}$ under the test conditions.
+All prior research showed a $\SI{100}{\percent}$ accuracy under their respective test conditions.
+Although the proposed approach was not more accurate than prior attempts, it showed that consumer grade hardware can be used to detect the value of dice with high levels of accuracy.
 
 \subsection{Future Research}
 

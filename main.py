@@ -25,7 +25,7 @@ P_HOUGH_THRESHOLD = "Threshold"
 P_HOUGH_MIN_LINE_LENGTH = "Min. Line Length"
 P_HOUGH_MAX_LINE_GAP = "Max. Line Gap"
 
-cam = Camera(2)
+cam = Camera(0)
 # cam = Image("captures/04.jpg")
 
 def do_camera(_img, _params, _imgs, _state):
@@ -220,7 +220,7 @@ def main():
     gui.widgets.append(widget_threshold)
 
     widget_blur = Widget("Blur", do_blur, show_controls=False)
-    widget_blur.params.append(Param(P_BLUR_KERNEL, 0, 20, 4))
+    widget_blur.params.append(Param(P_BLUR_KERNEL, 0, 20, 2))
     gui.widgets.append(widget_blur)
 
     widget_edges_canny = Widget(
