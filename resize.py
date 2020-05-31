@@ -8,6 +8,7 @@ DIR_NAME = "./die_images/"
 
 
 def main():
+    """ Resizes the images and converts them to grayscale. """
     for filename in os.listdir(DIR_NAME):
         path = os.path.join(DIR_NAME, filename)
         img = cv2.imread(path)

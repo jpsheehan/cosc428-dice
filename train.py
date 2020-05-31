@@ -7,14 +7,17 @@ MODEL = "./model.ckpt"
 
 
 def save_model(model, filename=MODEL):
+    """ Saves the model. """
     model.save(filename)
 
 
 def load_model(filename=MODEL):
+    """ Loads the model file. """
     return tf.keras.models.load_model(filename)
 
 
 def train():
+    """ Trains the model. """
     x_train, y_train = data.load_training_data()
 
     model = tf.keras.Sequential()
@@ -34,8 +37,9 @@ def train():
 
 
 def main():
+    """ Train the model based on the image data from the data file. """
     model = train()
-    save_model(model, "new_model")
+    save_model(model)
     print("Model saved")
 
 

@@ -1,3 +1,5 @@
+""" A framework for creating GUIs that allow for easy tuning of parameters. """
+
 import cv2
 
 

@@ -29,7 +29,9 @@ cam = Camera(0)
 # cam = Image("captures/04.jpg")
 
 def do_camera(_img, _params, _imgs, _state):
+    """ Reads a frame from the camera. """
     return cam.read()
+
 
 
 def do_greyscale(img, _params, _imgs, _state):
@@ -38,13 +40,13 @@ def do_greyscale(img, _params, _imgs, _state):
     return img
 
 
-def do_denoising(img, params, _imgs, _state):
-    kernel_size = params[P_DENOISE_KERNEL]
-    kernel = cv.getStructuringElement(
-        cv.MORPH_RECT, (kernel_size, kernel_size))
-    img = cv.morphologyEx(img, cv.MORPH_DILATE, kernel)
-    img = cv.morphologyEx(img, cv.MORPH_ERODE, kernel)
-    return img
+#def do_denoising(img, params, _imgs, _state):
+#    kernel_size = params[P_DENOISE_KERNEL]
+#    kernel = cv.getStructuringElement(
+#        cv.MORPH_RECT, (kernel_size, kernel_size))
+#    img = cv.morphologyEx(img, cv.MORPH_DILATE, kernel)
+#    img = cv.morphologyEx(img, cv.MORPH_ERODE, kernel)
+#    return img
 
 
 def do_blur(img, params, _imgs, _state):
@@ -107,7 +109,7 @@ def is_square(rot_rect, error):
 
 
 def do_annotation(edges, _params, imgs, state):
-
+    """ Does the contour detection, classification, and annotates the final image. """
     img_annotated = imgs[0].copy()
 
     contours = get_contours(edges)
@@ -130,27 +132,27 @@ def do_annotation(edges, _params, imgs, state):
         if face is None:
             continue
 
+        # get the estimated value and its probability from the CNN
         estimated_value, probability = get_prob(face, state["model"])
 
-        # if the probability is too low, we cannot be sure
-#         if probability < 1000:
- #            continue
-
+        # draw the outline of the die
         img_annotated = cv.drawContours(
             img_annotated, [rot_rect], 0, COLOR_RED, 2)
 
+        # draw the value and probability
         # img_annotated = cv.putText(
         #     img_annotated, "{} ({}%)".format(estimated_value, probability), (rect[0] + rect[2] + 5, rect[1] + 5), cv.FONT_HERSHEY_PLAIN, 3, COLOR_GREEN, thickness=3)
 
+        # draw the value next to its die
         img_annotated = cv.putText(
             img_annotated, "{}".format(estimated_value), (rect[0] + rect[2] + 5, rect[1] + 5), cv.FONT_HERSHEY_PLAIN, 3, COLOR_GREEN, thickness=3)
 
         state["faces"].append(face)
 
     # print the number of dice found on the image
-    noun = "dice"
-    if len(state["faces"]) == 1:
-        noun = "die"
+    # noun = "dice"
+    # if len(state["faces"]) == 1:
+    #     noun = "die"
     # cv.putText(img_annotated, "Found {} {}!".format(str(len(state["faces"])), noun),
                # (0, img_annotated.shape[0]), cv.FONT_HERSHEY_PLAIN, 3, COLOR_WHITE, 2)
 
@@ -158,12 +160,14 @@ def do_annotation(edges, _params, imgs, state):
 
 
 def get_raw_contours(edges):
+    """ Gets all the contours using Suzuki's algorithm. """
     contours, _ = cv.findContours(
         edges, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
     return contours
 
 
 def get_contours(edges):
+    """ Gets all the contours after size and shape rejection. """
     # find all the contours
     contours = get_raw_contours(edges)
 
@@ -185,15 +189,24 @@ def key_handler(key, _imgs, state):
 
 
 def get_prob(img, model):
+    """ Returns the probability and estimated value. """
+
+    # grayscale the image and resize it to fit the CNN
     img = do_greyscale(img, None, None, None)
     img = cv.resize(img, IMG_SIZE)
+
+    # run the CNN on the image
     probs = model(np.array([img])).numpy()[0]
+
+    # find the most probable value and its probability
     m = None
     v = None
     for i, p in enumerate(probs):
         if m is None or p > m:
             m = p
             v = i + 1
+
+    # return these values
     return v, m
 
 
