@@ -194,6 +194,12 @@ The image (figure \ref{fig:blurred}) is now sufficiently clean of noise and feat
 
 \subsection{Die Face Detection}
 
+The dice detector stage is broken up into discrete steps.
+First the edges are detected using Canny's edge detection algorithm.
+Then the edges are joined into contours by Suzuki's contour tracing algorithm.
+Finally, the contours are filtered based on their size and shape.
+This leaves only the contours that are likely to be die outlines.
+
 \subsubsection{Edge Detection}
 % CANNY EDGE DETECTION
 The Canny edge detector \cite{Canny1986} is used to find the edges of the dice.
@@ -314,9 +320,15 @@ A Logitech C170 webcam with a resolution of 640x360 pixels was used to capture i
 A wooden desk was used as hard surface where the dice could be rolled.
 A desk lamp was used to improve the ambient lighting on the desk. 
 
-The webcam was setup $\SI{37}{\centi\metre}$ above the surface looking directly down. 
+The webcam was setup approximately $\SI{27}{\centi\metre}$ above the surface looking directly down (figure \ref{fig:test}). 
 Two white dice (black pips) and two yellow dice (black pips) were rolled 50 times.
 The webcam was paused while the results were recorded in a spreadsheet.
+\begin{figure}
+	\centering
+	\includegraphics[width=0.7\textwidth, angle=270, origin=c]{test}
+	\caption{The test apparatus.}
+	\label{fig:test}
+\end{figure}
 
 Over the 200 rolls, $\SI{95.0}{\percent}$ of the dice were detected, and $\SI{95.5}{\percent}$ of these were correctly classified.
 This yields an overall accuracy of $\SI{90.7}{\percent}$.
@@ -342,6 +354,7 @@ Although the proposed approach was not more accurate than prior attempts, it sho
 The dice detector is very sensitive to the lighting conditions and the background surface.
 In the future, this should either be constrained or a method to overcome the variations in lighting should be devised.
 More experimentation into image morphology operations such as erosion, dilation, opening, and closing \cite{Szeliski2011} should be investigated.
+Canny edge detection was primarily used because it was simple to understand, however there do exist faster edge detectors that may perform more accurately, such as the declivity operator \cite{Mich1995}\cite{Bhardwaj2012}.
 Faster contour tracing algorithms should be researched, such as the one proposed by Seo, et al. \cite{Seo2016}.
 
 During testing, the number 4 was misclassified as a 2 eight times, and the number 5 was misclassified as a 3 once.
