@@ -5,10 +5,12 @@
 /__MACOSX
 /images
 /die_images
-/training_data
+#/training_data
 /test_data
 /new_model
 /model.ckpt
+/cosc428_final
+*.zip
 *.pyc
 *.swp
 *.bak
