@@ -26,13 +26,14 @@
 \begin{document}
 
 \title{
-	Identification and Classification of Gambling Dice using Commodity Hardware
+	Identification and Classification of Gambling Dice using Image Feature Detection and a Convolutional Neural Network
 }
 
 \author{
 	\IEEEauthorblockN{Jesse Patrick Sheehan}
 	\IEEEauthorblockA{
-		\textit{Department of Electrical and Computer Engineering} \\
+		\textit{Department of Electrical and} \\
+		\textit{Computer Engineering} \\
 		\textit{University of Canterbury}\\
 		Christchurch, New Zealand \\
 		jps111@uclive.ac.nz
@@ -40,7 +41,8 @@
 	\and
 	\IEEEauthorblockN{Richard Green}
 	\IEEEauthorblockA{
-		\textit{Department of Computer Science and Software Engineering} \\
+		\textit{Department of Computer Science and} \\
+		\textit{Software Engineering} \\
 		\textit{University of Canterbury}\\
 		Christchurch, New Zealand \\
 		richard.green@canterbury.ac.nz
@@ -63,7 +65,18 @@
 
 \section{Introduction}
 
-Dice value detection is a valuable tool for the gaming/gambling industry.
+Dice (figure \ref{fig:original}) are small cube shaped objects often used in board games, card games, or casino games to produce a random number.
+They typically have small circles (pips) painted or embossed on each side to denote their value.
+The modern style dice have been dated to as early as 600 BC from China \cite{Romanowski2020}.
+Modern dice are usually made of plastic and are white with black pips.
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.4\textwidth]{original}
+	\caption{An example of five standard dice.}
+	\label{fig:original}
+\end{figure}
+
+Dice value detection is a valuable tool for the gaming and gambling industries.
 Image recognition has often been used in conjunction with other techniques to protect casinos against cheating \cite{4129523}\cite{Correia1995}.
 Common image processing and feature detection methods can be used to identify the position of dice.
 Machine learning algorithms can be used to classify the value of the dice.
@@ -76,9 +89,17 @@ This paper proposes a method of detecting and classifying dice using these techn
 
 Prior research in this field have taken advantage of numerous methods.
 
+\subsection{Prior Research}
+
 The ``SORTE'' system was commissioned by the Portuguese Gaming Inspection Authorities for use in casinos \cite{Correia1995}.
 It identified the locations of the pips on all dice and uses spatial locality to assign values to each.
-However, this system required specific dice, a birds-eye view of the surface, and a careful ambient lighting setup.
+However, this system required specific dice, a birds-eye view of the surface (figure \ref{fig:prior_1a}), and a careful ambient lighting setup.
+\begin{figure}
+	\centering
+	\includegraphics[width=0.4\textwidth]{prior_1a}
+	\caption{The apparatus setup including gaming table and camera.}
+	\label{fig:prior_1a}
+\end{figure}
 
 The system designed by Lapanja, et al., detects dice values for a mechanical gambling machine \cite{Lapanjaa}.
 It uses color difference to identify the pips and template matching to classify the value of each die.
@@ -91,6 +112,7 @@ Finally, the method proposed by Chung \cite{Chung2009} uses the least distance c
 This method detects the pips and then groups the pips into valid configurations based on the relative distance between each pip.
 This method requires a birds-eye view and has only been tested on up to four dice.
 
+
 All of these methods rely on detecting the pips and have been constrained by either the camera angle, the number of dice, or the background surface.
 The proposed method focuses on detecting the die outline and then classifying the value using a convolutional neural network (CNN).
 
@@ -98,7 +120,7 @@ The proposed method focuses on detecting the die outline and then classifying th
 
 The proposed method is arranged in several stages.
 Figure \ref{fig:stages} illustrates the process of classifying the dice values from an image. 
-\begin{figure}[H]
+\begin{figure}
 	\centering
 	\begin{tikzpicture}[
 		rectnode/.style={rectangle, draw=black!60, fill=black!15, very thick, minimum size=5mm},
@@ -125,12 +147,6 @@ Figure \ref{fig:stages} illustrates the process of classifying the dice values f
 
 The image (figure \ref{fig:original}) is obtained from a source such as a file or video stream.
 Pre-processing is performed to remove extraneous information from the image.
-\begin{figure}[H]
-	\centering
-	\includegraphics[width=0.4\textwidth]{original}
-	\caption{The original image from a webcam.}
-	\label{fig:original}
-\end{figure}
 
 % GRAYSCALE
 The image is converted to a grayscale color-space.
@@ -151,7 +167,7 @@ This step is required for the edge detection step.
 		\textnormal{white} & \textnormal{otherwise}
 	\end{cases} \label{eq:threshold}
 \end{align}
-\begin{figure}[H]
+\begin{figure}
 	\centering
 	\includegraphics[width=0.4\textwidth]{threshold}
 	\caption{The image after thresholding.}
@@ -166,7 +182,7 @@ The image (figure \ref{fig:blurred}) is now sufficiently clean of noise and feat
 \begin{align}
 	K = \{0.0625, 0.25, 0.375, 0.25, 0.0625\}^T \label{eq:kernel}
 \end{align}
-\begin{figure}[H]
+\begin{figure}
 	\centering
 	\includegraphics[width=0.4\textwidth]{blur}
 	\caption{The image after pre-processing.}
@@ -190,7 +206,7 @@ Finally, a double threshold is applied to ensure that only the relevant edges ar
 Any pixels that have a gradient intensity above 320 are considered to be edges.
 Any pixels that have a gradient intensity above 110 and are connected to an edge are also considered edges.
 A small number of edges that are not related to the dice remain due to variations in lighting and background surface texture (figure \ref{fig:canny}).
-\begin{figure}[H]
+\begin{figure}
 	\centering
 	\includegraphics[width=0.4\textwidth]{canny}
 	\caption{The original image with the edges highlighted.}
@@ -199,7 +215,8 @@ A small number of edges that are not related to the dice remain due to variation
 
 % SUZUKI CONTOUR TRACING
 The Suzuki contour tracing algorithm \cite{Suzuki1985} joins related continuous edges.
-
+It walks over the image and categorises each edge. 
+In this way it can create a hierarchy of edge features such as the outer border and hole border.
 
 % CONTOUR FILTERING
 The contours are then kept if they have the following properties:
@@ -223,7 +240,7 @@ def is_square(points, error):
     return diff <= error
 \end{lstlisting}
 After contour filtering is performed only the dice are left (figure \ref{fig:contour}). 
-\begin{figure}[H]
+\begin{figure}
 	\centering
 	\includegraphics[width=0.4\textwidth]{contours}
 	\caption{The original image with the remaining contours highlighted.}
@@ -239,7 +256,7 @@ Each square region must be cropped from the original image and rotated so that i
 Rotation is performed with an affine rotation transformation.
 Each image must be scaled to 64x64 pixels for classification.
 The die faces have been isolated (figure \ref{fig:faces}) and can now be passed to the CNN for classification.
-\begin{figure}[H]
+\begin{figure}
 	\centering
 	\includegraphics[width=0.3\textwidth]{faces}
 	\caption{The die faces after transformation.}
@@ -263,7 +280,7 @@ Each image is grayscale and 64x64 pixels in size.
 
 The CNN determines the probability that the isolated die face has a specific number value.
 The largest of these values is selected and the original image is annotated with the most likely number for each dice (figure \ref{fig:annotated}).
-\begin{figure}[H]
+\begin{figure}
 	\centering
 	\includegraphics[width=0.4\textwidth]{annotated}
 	\caption{The final image with annotations.}
@@ -280,7 +297,7 @@ The webcam was setup $\SI{37}{\centi\metre}$ above the surface looking directly 
 Two white dice (black pips) and two yellow dice (black pips) were rolled 50 times.
 The webcam was paused while the results were recorded in a spreadsheet.
 The distribution of the dice rolls was relatively equal between the different values (figure \ref{fig:results}).
-\begin{figure}[H]
+\begin{figure}
 	\centering
 	\includegraphics[width=0.5\textwidth]{results}
 	\caption{The distribution of the 200 dice rolls.}
@@ -301,10 +318,15 @@ Although the proposed approach was not more accurate than prior attempts, it sho
 The dice detector is very sensitive to the lighting conditions and the background surface.
 In the future, this should either be constrained or a method to overcome the variations in lighting should be devised.
 
-The number 4 was misclassified as a 2 eight times, and the number 5 was misclassified as a 3 once.
+During testing, the number 4 was misclassified as a 2 eight times, and the number 5 was misclassified as a 3 once.
 The misclassifications are likely due to the visual similarity of these numbers and the CNN being trained on a small dataset. 
 The CNN model should be trained on more images to improve its accuracy in the future.
 
+Further research must be done to be able to detect dice from different camera angles.
+This may involve an entirely different model of dice detection and classification.
+All prior research uses pip detection to classify dice, this method would likely be more applicable to dice viewed at an angle.
+This is because when viewed at an angle, each pip becomes elliptical.
+This has the additional benefit of being able to determine the angle of the face.
 \printbibliography
 
 \end{document}
