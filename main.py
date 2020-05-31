@@ -25,8 +25,8 @@ P_HOUGH_THRESHOLD = "Threshold"
 P_HOUGH_MIN_LINE_LENGTH = "Min. Line Length"
 P_HOUGH_MAX_LINE_GAP = "Max. Line Gap"
 
-# cam = Camera(0)
-cam = Image("captures/04.jpg")
+cam = Camera(2)
+# cam = Image("captures/04.jpg")
 
 def do_camera(_img, _params, _imgs, _state):
     return cam.read()
@@ -203,28 +203,28 @@ def main():
     gui = Gui(key_handler=key_handler)
     gui.state["model"] = load_model()
 
-    widget_camera = Widget("Camera", do_camera, show_window=False)
+    widget_camera = Widget("Camera", do_camera, show_window=True, show_controls=False)
     gui.widgets.append(widget_camera)
 
-    widget_greyscale = Widget("Greyscale", do_greyscale, show_window=False)
+    widget_greyscale = Widget("Greyscale", do_greyscale, show_window=False, show_controls=False)
     gui.widgets.append(widget_greyscale)
 
     # widget_denoising = Widget("Denoising", do_denoising)
     # widget_denoising.params.append(Param(P_DENOISE_KERNEL, 1, 20, 1))
     # gui.widgets.append(widget_denoising)
 
-    widget_threshold = Widget("Threshold", do_threshold)
+    widget_threshold = Widget("Threshold", do_threshold, show_controls=False)
     widget_threshold.params.append(Param(P_THRESHOLD_BLOCK_SIZE, 0, 50, 5))
     widget_threshold.params.append(Param(P_THRESHOLD_MAX_VAL, 0, 255, 160))
     widget_threshold.params.append(Param(P_THRESHOLD_CONSTANT, -20, 20, 0))
     gui.widgets.append(widget_threshold)
 
-    widget_blur = Widget("Blur", do_blur)
+    widget_blur = Widget("Blur", do_blur, show_controls=False)
     widget_blur.params.append(Param(P_BLUR_KERNEL, 0, 20, 4))
     gui.widgets.append(widget_blur)
 
     widget_edges_canny = Widget(
-        "Canny Edge Detection", do_edges_canny, display_function=do_display_edges)
+        "Canny Edge Detection", do_edges_canny, display_function=do_display_edges, show_controls=False)
     widget_edges_canny.params.append(Param(P_CANNY_THRESHOLD_1, 1, 600, 110))
     widget_edges_canny.params.append(Param(P_CANNY_THRESHOLD_2, 1, 600, 320))
     gui.widgets.append(widget_edges_canny)

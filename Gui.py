@@ -58,7 +58,7 @@ class Param:
 
 class Widget:
 
-    def __init__(self, name, function, show_image=True, show_window=True, display_function=None):
+    def __init__(self, name, function, show_image=True, show_window=True, show_controls=True, display_function=None):
         self.name = name
         self.params = []
         self.function = function
@@ -66,6 +66,7 @@ class Widget:
         self.display_function = display_function
         self.show_window = show_window
         self.show_img = show_image
+        self.show_controls = show_controls
 
     def __del__(self):
         self.hide()
@@ -80,10 +81,11 @@ class Widget:
 
         if self.show_window:
             cv2.namedWindow(self.name)
-            for param in self.params:
-                cv2.createTrackbar(param.name, self.name,
-                                   param.default, param.maximum, self.__nop)
-                cv2.setTrackbarMin(param.name, self.name, param.minimum)
+            if self.show_controls:
+                for param in self.params:
+                    cv2.createTrackbar(param.name, self.name,
+                                       param.default, param.maximum, self.__nop)
+                    cv2.setTrackbarMin(param.name, self.name, param.minimum)
 
     def hide(self):
         """Hides the window."""
@@ -97,7 +99,10 @@ class Widget:
 
         evaluated_params = {}
         for param in self.params:
-            value = cv2.getTrackbarPos(param.name, self.name)
+            if self.show_controls:
+                value = cv2.getTrackbarPos(param.name, self.name)
+            else:
+                value = param.default
             evaluated_params[param.name] = value
 
         shown_img = self.img = self.function(
