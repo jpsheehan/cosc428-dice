@@ -89,6 +89,31 @@ The proposed method focuses on detecting the die outline and then classifying th
 
 \section{Method}
 
+The proposed method is arranged in several stages.
+Figure \ref{fig:stages} illustrates the process of classifying the dice values from an image. 
+\begin{figure}
+	\centering
+	\begin{tikzpicture}[
+		rectnode/.style={rectangle, draw=black!60, fill=black!15, very thick, minimum size=5mm},
+	]
+		
+		% nodes
+		\node[rectnode] (edge)							{Image Capture};
+		\node[rectnode] (contour) 	[below=of edge] 	{Image Pre-Processing};
+		\node[rectnode] (size)		[below=of contour] 	{Image Feature Detection};
+		\node[rectnode] (shape)		[below=of size]		{Image Isolation and Transformation};
+		\node[rectnode] (cnn)		[below=of shape]	{Image Classification};
+
+		% lines
+		\draw[thick, ->] (edge.south) -- (contour.north);
+		\draw[thick, ->] (contour.south) -- (size.north);
+		\draw[thick, ->] (size.south) -- (shape.north);
+		\draw[thick, ->] (shape.south) -- (cnn.north);
+	\end{tikzpicture}
+	\caption{The image processing pipeline.}
+	\label{fig:stages}
+\end{figure}
+
 \subsection{Image Pre-processing}
 
 The image (figure \ref{fig:original}) is obtained from a source such as a file or video stream.
@@ -137,9 +162,33 @@ The image (figure \ref{fig:blurred}) is now sufficiently clean of noise and feat
 
 \subsection{Die Face Detection}
 
+% CANNY EDGE DETECTION
 The Canny edge detector \cite{Canny1986} is used to find the edges of the dice.
-This will also detect undesirable ``edges'' on the flat background surface due to variations in lighting and texture.
-The Suzuki contour tracing algorithm \cite{Suzuki1985} joins the continuous edges.
+It builds upon the Sobel filter \cite{Sobel2014} which finds extreme vertical and horizontal gradients, $G_x$ and $G_y$, in an image.
+The edge gradient, $G$, and angle, $\theta$, for each pixel is then given by equations \ref{eq:gradient} and \ref{eq:angle} respectively.
+The edge gradient is always perpendicular to the edge, therefore it is rounded to either horizontal, vertical, or a diagonal.
+\begin{align}
+	G &= \sqrt{G_x^2 + G_y^2} \label{eq:gradient} \\[1em]
+	\theta &= \tan^{-1}\left(\frac{G_y}{G_x}\right) \label{eq:angle}
+\end{align}
+Every pixel is then checked to ensure it is the local maximum in the direction of the gradient at that point.
+This has the effect of making the edges one pixel thin.
+Finally, a double threshold is applied to ensure that only the relevant edges are kept.
+Any pixels that have a gradient intensity above 320 are considered to be edges.
+Any pixels that have a gradient intensity above 110 and are connected to an edge are also considered edges.
+A small number of edges that are not related to the dice remain due to variations in lighting and background surface texture (figure \ref{fig:canny}).
+\begin{figure}
+	\centering
+	\includegraphics[width=0.4\textwidth]{canny}
+	\caption{The original image with the edges highlighted.}
+	\label{fig:canny}
+\end{figure}
+
+% SUZUKI CONTOUR TRACING
+The Suzuki contour tracing algorithm \cite{Suzuki1985} joins related continuous edges.
+
+
+% CONTOUR FILTERING
 The contours are then kept if they have the following properties:
 \begin{itemize}
 	\item They have four points (i.e. are quadrilateral).
@@ -160,50 +209,12 @@ def is_square(points, error):
     diff = abs(e1 - e2) / max(e1, e2)
     return diff <= error
 \end{lstlisting}
-%\begin{algorithm}
-%	\setstretch{1.35}
-%	\caption{The shape rejection filter as pseudocode.}
-%	\label{alg:shape-rejection}
-%	\begin{algorithmic}
-%		\REQUIRE $0 \leq \delta \leq 1$ be the acceptable error factor
-%		\REQUIRE $P_n$ be the set of points in the quadrilateral
-%		\STATE $E_{12} \leftarrow ||P_2 - P_1||$
-%		\STATE $E_{34} \leftarrow ||P_4 - P_3||$
-%		\STATE $\Delta = \frac{|E_{12} - E_{34}|}{\textnormal{max}(E_{12}, E_{34})}$
-%		\IF {$\Delta \leq \delta$} \RETURN \TRUE \ELSE \RETURN \FALSE \ENDIF
-%	\end{algorithmic}
-%\end{algorithm}
-%\begin{figure}
-%	\centering
-%	\begin{tikzpicture}[
-%		rectnode/.style={rectangle, draw=black!60, fill=black!15, very thick, minimum size=5mm},
-%	]
-%		
-%		% nodes
-%		\node[rectnode] (edge)							{Edge Detection};
-%		\node[rectnode] (contour) 	[below=of edge] 	{Contour Detection};
-%		\node[rectnode] (size)		[below=of contour] 	{Contour Size Rejection};
-%		\node[rectnode] (shape)		[below=of size]		{Contour Shape Rejection};
-%
-%		% lines
-%		\draw[thick, ->] (edge.south) -- (contour.north);
-%		\draw[thick, ->] (contour.south) -- (size.north);
-%		\draw[thick, ->] (size.south) -- (shape.north);
-%	\end{tikzpicture}
-%	\caption{The image feature processing pipeline.}
-%	\label{fig:feature-detection}
-%\end{figure}
+
 
 \subsection{Die Face Transformation}
 
 The location and angle of the die face is now known within the original image (figure \ref{fig:canny}).
 Each die face must now be transformed before the CNN can be applied:
-\begin{figure}
-	\centering
-	\includegraphics[width=0.4\textwidth]{canny}
-	\caption{The original image with the edges highlighted.}
-	\label{fig:canny}
-\end{figure}
 
 Each square region must be cropped from the original image and rotated so that it lies flat upon the cartesian axis.
 Rotation is performed with an affine rotation transformation.
@@ -227,6 +238,7 @@ This model can then be used to classify images that it hasn't seen before.
 The proposed CNN has 4 layers and uses categorical cross-entropy as its loss function. 
 This allows the model to produce probabilities for all six values while being aware that only one is correct.
 The model was trained on 1200 images of white and yellow dice that were manually captured and classified.
+Each image is grayscale and 64x64 pixels in size.
 
 \subsection{Die Classification}
 
@@ -248,6 +260,13 @@ A Logitech C170 webcam with a resolution of 640x360 pixels was used to capture i
 The webcam was setup $\SI{37}{\centi\metre}$ above the surface looking directly down. 
 Two white dice (black pips) and two yellow dice (black pips) were rolled 50 times.
 The webcam was paused while the results were recorded in a spreadsheet.
+The distribution of the dice rolls was relatively equal between the different values (figure \ref{fig:results}).
+\begin{figure}
+	\centering
+	\includegraphics[width=0.4\textwidth]{results}
+	\caption{The distribution of the 200 dice rolls.}
+	\label{fig:results}
+\end{figure}
 
 Over the 200 rolls, $\SI{95.0}{\percent}$ of the dice were detected, and $\SI{95.5}{\percent}$ of these were correctly classified.
 This yields an overall accuracy of $\SI{90.7}{\percent}$.
