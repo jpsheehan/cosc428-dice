@@ -3,6 +3,7 @@
 % The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
 %\usepackage{cite}
 \usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
 \usepackage[english]{babel}
 \usepackage{amsmath,amssymb,amsfonts}
 \usepackage{algorithmic}
@@ -15,6 +16,7 @@
 \usepackage{setspace}
 \usepackage{xcolor}
 \usepackage{graphicx}
+\usepackage[binary-units]{siunitx}
 
 \usetikzlibrary{positioning}
 \addbibresource{cosc428.bib}
@@ -29,6 +31,7 @@
 \author{
 	\IEEEauthorblockN{Jesse Patrick Sheehan}
 	\IEEEauthorblockA{
+		Supervisor: Richard Green \\
 		\textit{Department of Electrical and Computer Engineering} \\
 		\textit{University of Canterbury}\\
 		Christchurch, New Zealand \\
@@ -104,14 +107,15 @@ Some pre-processing is performed to remove extraneous information:
 \subsection{Die Face Detection}
 
 The image (figure \ref{fig:blurred}) is now sufficiently clean of noise and feature detection can now take place.
-Figure \ref{fig:feature-detection} shows the feature detection process.
-\begin{enumerate}
-	\item Edge detection using the Canny \cite{Canny1986} algorithm is used. % mention parameters
-	\item Contours are then detected using the algorithm described by Suzuki, et al. \cite{Suzuki1985}.
-	\item Contours are rejected if they don't have four points (i.e. are not quadrilateral).
-	\item Contours are rejected if they are too large or too small.
-	\item Contours are then filtered by their shape. The shape rejection filter (algorithm \ref{alg:shape-rejection}) will reject shapes that are not square enough.
-\end{enumerate}
+The Canny edge detector \cite{Canny1986} is used to find the edges of the dice.
+This will also detect undesirable ``edges'' on the flat background surface due to variations in lighting and texture.
+The Suzuki contour tracing algorithm \cite{Suzuki1985} joins the edges that appear continuous.
+The contours are then kept if they have the following properties:
+\begin{itemize}
+	\item They have four points (i.e. are quadrilateral).
+	\item They have an area greater than 200 pixels square. This removes any small contours that are artifacts of the lighting.
+	\item They are square-ish. The shape rejection filter (algorithm \ref{alg:shape-rejection}) will reject contours that are not square enough. The proposed implementation uses $\delta = 20\%$.
+\end{itemize}
 \begin{algorithm}
 	\setstretch{1.35}
 	\caption{The shape rejection filter as pseudocode.}
@@ -156,10 +160,6 @@ Figure \ref{fig:feature-detection} shows the feature detection process.
 
 The location and angle of the die face is now known within the original image (figure \ref{fig:canny}).
 Each die face must now be transformed before the CNN can be applied:
-
-Each square region must be cropped from the original image and rotated so that it lies flat upon the cartesian axis.
-Rotation is performed with an affine rotation transformation.
-Each image must be scaled to 64 x 64 pixels as this is what the CNN was trained on.
 \begin{figure}
 	\centering
 	\includegraphics[width=0.3\textwidth]{canny}
@@ -167,19 +167,62 @@ Each image must be scaled to 64 x 64 pixels as this is what the CNN was trained 
 	\label{fig:canny}
 \end{figure}
 
-\subsection{Die Classification}
-
+Each square region must be cropped from the original image and rotated so that it lies flat upon the cartesian axis.
+Rotation is performed with an affine rotation transformation.
+Each image must be scaled to 64x64 pixels for classification.
 The die faces have been isolated (figure \ref{fig:faces}) and can now be passed to the CNN for classification.
-
 \begin{figure}
 	\centering
 	\includegraphics[width=0.2\textwidth]{faces}
 	\caption{The die faces after transformation.}
 	\label{fig:faces}
 \end{figure}
+
+\subsection{Machine Learning}
+
+Machine learning algorithms are often used to solve problems that would be difficult to solve using traditional computing methods.
+A CNN is a class of deep neural networks that has many applications in computer vision, speech recognition, and many other fields \cite{Pena2014}\cite{Madabhushi2016}\cite{Lawrence1997}\cite{Kalchbrenner2014}.
+A deep neural network is designed with many layers where the information will pass through.
+A model will then be trained on a large dataset with known parameters.
+This model can then be used to classify images that it hasn't seen before.
+
+The proposed CNN has 4 layers and uses categorical cross-entropy as its loss function. 
+This allows the model to produce probabilities for all 6 values.
+The model was trained on 1200 images of white and yellow dice that were manually captured and classified.
+
+\subsection{Die Classification}
+
+The CNN determines the probability that the isolated die face has a specific number value.
+The largest of these values is selected and the original image is annotated with the most likely number for each dice (figure \ref{fig:annotated}).
+\begin{figure}
+	\centering
+	\includegraphics[width=0.3\textwidth]{annotated}
+	\caption{The final image with annotations.}
+	\label{fig:annotated}
+\end{figure}
+
 \section{Results}
 
+The following results were obtained from a laptop with a $\SI{2.4}{\giga\hertz}$ Intel Core i5 processor and $\SI{8}{\giga\byte}$ of memory.
+The software used was OpenCV $4.2.0$, Python $3.8.1$, and Tensorflow $2.2.0$ running on 64-bit Windows 10.
+A Logitech C170 webcam with a resolution of 1024x768 pixels was used to capture images and videos.
+
+The webcam was setup $\SI{37}{\centi\metre}$ above the surface looking directly down. 
+Two white dice (black pips) and two yellow dice (black pips) were rolled 50 times.
+The webcam was paused while the results were recorded in a spreadsheet.
+
+Over the 200 rolls, $\SI{95.0}{\percent}$ of the dice were detected, and $\SI{95.5}{\percent}$ of these were correctly classified.
+
 \section{Conclusion}
+
+\subsection{Future Research}
+
+The dice detector is very sensitive to the lighting conditions and the background surface.
+In the future, this should either be constrained or a method to overcome the variations in lighting should be devised.
+
+The number 4 was misclassified as a 2 eight times, and the number 5 was misclassified as a 3 once.
+The misclassifications are likely due to the CNN being trained on a relatively small dataset. 
+The CNN model should be trained on more images to improve its accuracy.
 
 \printbibliography
 
