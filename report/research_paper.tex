@@ -81,6 +81,7 @@ Image recognition has often been used in conjunction with other techniques to pr
 Common image processing and feature detection methods can be used to identify the position of dice.
 Machine learning algorithms can be used to classify the value of the dice.
 Consumer-grade hardware devices are now more capable of handling the processing requirements of such methods.
+
 This paper proposes a method of detecting and classifying dice using these techniques.
 
 \section{Background}
@@ -191,6 +192,7 @@ The image (figure \ref{fig:blurred}) is now sufficiently clean of noise and feat
 
 \subsection{Die Face Detection}
 
+\subsubsection{Edge Detection}
 % CANNY EDGE DETECTION
 The Canny edge detector \cite{Canny1986} is used to find the edges of the dice.
 It builds upon the Sobel filter \cite{Sobel2014} which finds extreme vertical and horizontal gradients, $G_x$ and $G_y$, in an image.
@@ -213,11 +215,13 @@ A small number of edges that are not related to the dice remain due to variation
 	\label{fig:canny}
 \end{figure}
 
+\subsubsection{Contour Tracing}
 % SUZUKI CONTOUR TRACING
 The Suzuki contour tracing algorithm \cite{Suzuki1985} joins related continuous edges.
 It walks over the image and categorises each edge. 
 In this way it can create a hierarchy of edge features such as the outer border and hole border.
 
+\subsubsection{Contour Filtering}
 % CONTOUR FILTERING
 The contours are then kept if they have the following properties:
 \begin{itemize}
@@ -289,13 +293,31 @@ The largest of these values is selected and the original image is annotated with
 
 \section{Results}
 
-The following results were obtained from a laptop with a $\SI{2.4}{\giga\hertz}$ Intel Core i5 processor and $\SI{8}{\giga\byte}$ of memory.
-The software used was OpenCV $4.2.0$, Python $3.8.1$, and Tensorflow $2.2.0$ running on 64-bit Windows 10.
+A laptop with the following hardware specifications was used for testing:
+\begin{itemize}
+	\item $\SI{2.4}{\giga\hertz}$ Intel Core i5 processor,
+	\item $\SI{8}{\giga\byte}$ of memory.
+\end{itemize}
+
+A proof-of-concept program was written.
+The following software was used to run the program:
+\begin{itemize}
+	\item Python $3.8.1$,
+	\item OpenCV $4.2.0$,
+	\item Tensorflow $2.2.0$,
+	\item Windows 10 (64-bit).
+\end{itemize}
+
 A Logitech C170 webcam with a resolution of 640x360 pixels was used to capture images and videos.
+A wooden desk was used as hard surface where the dice could be rolled.
+A desk lamp was used to improve the ambient lighting on the desk. 
 
 The webcam was setup $\SI{37}{\centi\metre}$ above the surface looking directly down. 
 Two white dice (black pips) and two yellow dice (black pips) were rolled 50 times.
 The webcam was paused while the results were recorded in a spreadsheet.
+
+Over the 200 rolls, $\SI{95.0}{\percent}$ of the dice were detected, and $\SI{95.5}{\percent}$ of these were correctly classified.
+This yields an overall accuracy of $\SI{90.7}{\percent}$.
 The distribution of the dice rolls was relatively equal between the different values (figure \ref{fig:results}).
 \begin{figure}
 	\centering
@@ -304,8 +326,8 @@ The distribution of the dice rolls was relatively equal between the different va
 	\label{fig:results}
 \end{figure}
 
-Over the 200 rolls, $\SI{95.0}{\percent}$ of the dice were detected, and $\SI{95.5}{\percent}$ of these were correctly classified.
-This yields an overall accuracy of $\SI{90.7}{\percent}$.
+The proposed method is sensitive to the ambient lighting conditions and care was taken to reduce the reflections from the background surface and the dice themselves.
+This method also uses a birds-eye view camera, it does not work well when at an angle of more than $\SI{15}{\degree}$ away from the die's surface normal.
 
 \section{Conclusion}
 
@@ -317,16 +339,20 @@ Although the proposed approach was not more accurate than prior attempts, it sho
 
 The dice detector is very sensitive to the lighting conditions and the background surface.
 In the future, this should either be constrained or a method to overcome the variations in lighting should be devised.
+More experimentation into image morphology operations such as erosion, dilation, opening, and closing \cite{Szeliski2011} should be investigated.
+Faster contour tracing algorithms should be researched, such as the one proposed by Seo, et al. \cite{Seo2016}.
 
 During testing, the number 4 was misclassified as a 2 eight times, and the number 5 was misclassified as a 3 once.
 The misclassifications are likely due to the visual similarity of these numbers and the CNN being trained on a small dataset. 
-The CNN model should be trained on more images to improve its accuracy in the future.
+Either the CNN model should be trained on more images to improve its accuracy in the future or the CNN should be replaced by a pip counting algorithm.
+Once the image is segmented into different die faces, a simple pip counting method based on image feature detection could be used.
 
 Further research must be done to be able to detect dice from different camera angles.
 This may involve an entirely different model of dice detection and classification.
 All prior research uses pip detection to classify dice, this method would likely be more applicable to dice viewed at an angle.
 This is because when viewed at an angle, each pip becomes elliptical.
 This has the additional benefit of being able to determine the angle of the face.
+
 \printbibliography
 
 \end{document}
