@@ -46,7 +46,7 @@
 	Prior research uses the pips of a die to determine its value, whereas the proposed method detects the outline of the die.
 	Canny's edge detection and Suzuki's contour tracing algorithms were used to extract die faces from an image.
 	A convolutional neural network was used to classify these die faces and to provide a probable number value.
-	\textcolor{red}{Close the abstract by mentioning at least one result number (and hopefully a comparison with prior research results).}
+	The proposed method shows a 90\% success rate in correctly detecting and classifying dice values from a webcam.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -55,11 +55,12 @@
 
 \section{Introduction}
 
-Dice value detection is a valuable tool for the gaming industry.
-Common image processing and feature detection techniques can be used to identify the position of dice.
-Machine learning algoithms can be used to classify the value of the dice.
+Dice value detection is a valuable tool for the gaming/gambling industry.
+Image recognition has often been used in conjunction with other techniques to protect casinos against cheating \cite{4129523}\cite{Correia1995}.
+Common image processing and feature detection methods can be used to identify the position of dice.
+Machine learning algorithms can be used to classify the value of the dice.
 Consumer-grade hardware devices are now more capable of handling the processing requirements of such methods.
-This article offers a simple method of detecting and classifying dice.
+This paper proposes a method of detecting and classifying dice using these techniques.
 
 \section{Background}
 
@@ -99,7 +100,7 @@ Some pre-processing is performed to remove extraneous information:
 \end{enumerate}
 \begin{figure}
 	\centering
-	\includegraphics[width=0.3\textwidth]{original}
+	\includegraphics[width=0.4\textwidth]{original}
 	\caption{The original image from a webcam.}
 	\label{fig:original}
 \end{figure}
@@ -109,7 +110,7 @@ Some pre-processing is performed to remove extraneous information:
 The image (figure \ref{fig:blurred}) is now sufficiently clean of noise and feature detection can now take place.
 The Canny edge detector \cite{Canny1986} is used to find the edges of the dice.
 This will also detect undesirable ``edges'' on the flat background surface due to variations in lighting and texture.
-The Suzuki contour tracing algorithm \cite{Suzuki1985} joins the edges that appear continuous.
+The Suzuki contour tracing algorithm \cite{Suzuki1985} joins the continuous edges.
 The contours are then kept if they have the following properties:
 \begin{itemize}
 	\item They have four points (i.e. are quadrilateral).
@@ -122,7 +123,7 @@ The contours are then kept if they have the following properties:
 	\label{alg:shape-rejection}
 	\begin{algorithmic}
 		\REQUIRE $0 \leq \delta \leq 1$ be the acceptable error factor
-		\REQUIRE $P_n$ be the set of points in the rectangle
+		\REQUIRE $P_n$ be the set of points in the quadrilateral
 		\STATE $E_{12} \leftarrow ||P_2 - P_1||$
 		\STATE $E_{34} \leftarrow ||P_4 - P_3||$
 		\STATE $\Delta = \frac{|E_{12} - E_{34}|}{\textnormal{max}(E_{12}, E_{34})}$
@@ -131,7 +132,7 @@ The contours are then kept if they have the following properties:
 \end{algorithm}
 \begin{figure}
 	\centering
-	\includegraphics[width=0.3\textwidth]{blur}
+	\includegraphics[width=0.4\textwidth]{blur}
 	\caption{The image after pre-processing has occurred.}
 	\label{fig:blurred}
 \end{figure}
@@ -162,8 +163,8 @@ The location and angle of the die face is now known within the original image (f
 Each die face must now be transformed before the CNN can be applied:
 \begin{figure}
 	\centering
-	\includegraphics[width=0.3\textwidth]{canny}
-	\caption{The original image with the contours highlighted.}
+	\includegraphics[width=0.4\textwidth]{canny}
+	\caption{The original image with the edges highlighted.}
 	\label{fig:canny}
 \end{figure}
 
@@ -187,7 +188,7 @@ A model will then be trained on a large dataset with known parameters.
 This model can then be used to classify images that it hasn't seen before.
 
 The proposed CNN has 4 layers and uses categorical cross-entropy as its loss function. 
-This allows the model to produce probabilities for all 6 values.
+This allows the model to produce probabilities for all six values while being aware that only one is correct.
 The model was trained on 1200 images of white and yellow dice that were manually captured and classified.
 
 \subsection{Die Classification}
@@ -196,7 +197,7 @@ The CNN determines the probability that the isolated die face has a specific num
 The largest of these values is selected and the original image is annotated with the most likely number for each dice (figure \ref{fig:annotated}).
 \begin{figure}
 	\centering
-	\includegraphics[width=0.3\textwidth]{annotated}
+	\includegraphics[width=0.4\textwidth]{annotated}
 	\caption{The final image with annotations.}
 	\label{fig:annotated}
 \end{figure}
@@ -205,13 +206,14 @@ The largest of these values is selected and the original image is annotated with
 
 The following results were obtained from a laptop with a $\SI{2.4}{\giga\hertz}$ Intel Core i5 processor and $\SI{8}{\giga\byte}$ of memory.
 The software used was OpenCV $4.2.0$, Python $3.8.1$, and Tensorflow $2.2.0$ running on 64-bit Windows 10.
-A Logitech C170 webcam with a resolution of 1024x768 pixels was used to capture images and videos.
+A Logitech C170 webcam with a resolution of 640x360 pixels was used to capture images and videos.
 
 The webcam was setup $\SI{37}{\centi\metre}$ above the surface looking directly down. 
 Two white dice (black pips) and two yellow dice (black pips) were rolled 50 times.
 The webcam was paused while the results were recorded in a spreadsheet.
 
 Over the 200 rolls, $\SI{95.0}{\percent}$ of the dice were detected, and $\SI{95.5}{\percent}$ of these were correctly classified.
+This yields an overall accuracy of $\SI{90.7}{\percent}$.
 
 \section{Conclusion}
 
@@ -221,8 +223,8 @@ The dice detector is very sensitive to the lighting conditions and the backgroun
 In the future, this should either be constrained or a method to overcome the variations in lighting should be devised.
 
 The number 4 was misclassified as a 2 eight times, and the number 5 was misclassified as a 3 once.
-The misclassifications are likely due to the CNN being trained on a relatively small dataset. 
-The CNN model should be trained on more images to improve its accuracy.
+The misclassifications are likely due to the visual similarity of these numbers and the CNN being trained on a small dataset. 
+The CNN model should be trained on more images to improve its accuracy in the future.
 
 \printbibliography
 

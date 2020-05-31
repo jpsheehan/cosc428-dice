@@ -1,4 +1,7 @@
 *.pdf
+*.sav
+*.swp
+*.bak
 *.log
 *.gz
 *.bcf
