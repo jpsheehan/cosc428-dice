@@ -53,36 +53,36 @@
 
 \begin{abstract}
 	This paper proposes a method to identify dice values using image processing and machine learning techniques.
-	Prior research uses the pips of a die to determine its value, whereas the proposed method detects the outline of the die.
+	Prior research uses the pips of a die to determine its value, whereas the proposed method detects the outline of the die and processes it with a convolutional neural network (CNN).
 	Canny's edge detection and Suzuki's contour tracing algorithms were used to extract die faces from an image.
-	A convolutional neural network was used to classify these die faces and to provide a probable number value.
-	The proposed method shows a 90\% success rate in correctly detecting and classifying dice values from a webcam.
+	The CNN was used to classify these die faces and to provide a probable number value.
+	A 90\% success rate for correctly detecting and classifying dice values was achieved.
 \end{abstract}
 
 \begin{IEEEkeywords}
-	dice, gambling, computer vision, machine learning
+	dice, gambling, computer vision, convolutional neural network
 \end{IEEEkeywords}
 
 \section{Introduction}
 
-Dice (figure \ref{fig:original}) are small cube shaped objects often used in board games, card games, or casino games to produce a random number.
+Dice (figure \ref{fig:intro}) are small cube shaped objects often used in board games, card games, or casino games to produce a random number.
 They typically have small circles (pips) painted or embossed on each side to denote their value.
-The modern style dice have been dated to as early as 600 BC from China \cite{Romanowski2020}.
-Modern dice are usually made of plastic and are white with black pips.
+Modern style dice have been dated to as early as 600 BC from China \cite{Romanowski2020} and are usually made from plastic.
+Usually each die has black pips on a white surface however this may vary.
 \begin{figure}[H]
 	\centering
-	\includegraphics[width=0.4\textwidth]{original}
-	\caption{An example of five standard dice.}
-	\label{fig:original}
+	\includegraphics[width=0.4\textwidth]{intro}
+	\caption{An assortment of modern plastic dice. Note that not all pip colours are the same across different dice.}
+	\label{fig:intro}
 \end{figure}
 
 Dice value detection is a valuable tool for the gaming and gambling industries.
-Image recognition has often been used in conjunction with other techniques to protect casinos against cheating \cite{4129523}\cite{Correia1995}.
+Image recognition has often been used in conjunction with other techniques to protect casinos against cheating and to provide a trail of accountability \cite{4129523}\cite{Correia1995}.
 Common image processing and feature detection methods can be used to identify the position of dice.
 Machine learning algorithms can be used to classify the value of the dice.
-Consumer-grade hardware devices are now more capable of handling the processing requirements of such methods.
+With the advent of modern graphics processing units (GPUs), parallel computing has become more widely available and faster than for previous generations of hardware.
 
-This paper proposes a method of detecting and classifying dice using these techniques.
+The proposed method takes advantage of these advances in consumer-grade technology to detect and classify dice values.
 
 \section{Background}
 
