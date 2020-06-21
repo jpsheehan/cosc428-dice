@@ -98,30 +98,30 @@ However, this system required specific dice, a birds-eye view of the surface (fi
 \begin{figure}
 	\centering
 	\includegraphics[width=0.4\textwidth]{prior_1a}
-	\caption{The apparatus setup including gaming table and camera.}
+	\caption{The apparatus setup including gaming table and camera \cite{Lapanjaa}. Note how the surface is required to be of a specific size.}
 	\label{fig:prior_1a}
 \end{figure}
 
-The system designed by Lapanja, et al., detects dice values for a mechanical gambling machine \cite{Lapanjaa}.
+The system designed by Lapanja et al. \cite{Lapanjaa}, detects dice values for a mechanical gambling machine.
 It uses color difference to identify the pips and template matching to classify the value of each die.
 This method requires a birds-eye view, a high-contrast background surface, and relies on hard-coded masks for classification.
 
 The system devised by Huang \cite{Huang2008} uses a modified unsupervised gray clustering algorithm. 
 However, it requires a birds-eye view, a high-contrast background, and the number of dice to be known in advance.
 
-Finally, the method proposed by Chung \cite{Chung2009} uses the least distance criterion to classify die values.
-This method detects the pips and then groups the pips into valid configurations based on the relative distance between each pip.
+Finally, the method proposed by Chung et al. \cite{Chung2009} uses the least distance criterion to classify dice values.
+This algorithm detects the pips and then groups them into valid configurations based on the relative distance between each pip.
 This method requires a birds-eye view and has only been tested on up to four dice.
 
 Dice detection does not live entirely in the realm of industry and academia.
-Amatuers and hobbyists have had success in creating programs that solve this problem \cite{Gideon2018}\cite{Pesce2019}.  
+Amateurs and hobbyists have had success in creating programs that solve this problem \cite{Gideon2018}\cite{Pesce2019}.  
 
 All of these methods rely on detecting the pips and have been constrained by either the camera angle, the number of dice, or the background surface.
-The proposed method focuses on detecting the die outline and then classifying the value using a convolutional neural network (CNN).
+The proposed method focuses on detecting the die outline and then classifying the value using a CNN.
 
 \section{Method}
 
-The proposed method is arranged in several stages.
+The method is arranged in several stages.
 Figure \ref{fig:stages} illustrates the process of classifying the dice values from an image. 
 \begin{figure}
 	\centering
@@ -150,12 +150,19 @@ Figure \ref{fig:stages} illustrates the process of classifying the dice values f
 
 The image (figure \ref{fig:original}) is obtained from a source such as a file or video stream.
 Pre-processing is performed to remove extraneous information from the image.
+\begin{figure}
+	\centering
+	\includegraphics[width=0.4\textwidth]{original}
+	\caption{The original image, captured from a standard webcam.}
+	\label{fig:original}
+\end{figure}
 
 % GRAYSCALE
 The image is converted to a grayscale color-space.
-Equation \ref{eq:rgb2gray} is used to convert an RGB image into grayscale.
+Equation \ref{eq:rgb2gray} is used to convert an 24-bit RGB image into an 8-bit grayscale image.
 It is based on the luminance formula from ``Recommendation BT.601'' \cite{R2011}.
 Performing subsequent operations on a grayscale image increases speed at the cost of losing colour information.
+However, this colour information can be obtained by masking the original image if needed.
 \begin{align}
 	\textnormal{gray}(R, G, B) &= 0.299 \cdot R + 0.587 \cdot G + 0.114 \cdot B \label{eq:rgb2gray}
 \end{align}
@@ -180,7 +187,7 @@ This step is required for the edge detection step.
 % GAUSSIAN BLUR
 Smoothing is applied to the image to reduce the effect of any remaining noise.
 This is typically acheived with a 2-dimensional convolutional filter.
-A gaussian kernel of size 5 was chosen for the convolution (equation \ref{eq:kernel}). 
+A Gaussian kernel of size 5 was chosen for the convolution (equation \ref{eq:kernel}). 
 The image (figure \ref{fig:blurred}) is now sufficiently clean of noise and feature detection can take place.
 \begin{align}
 	K = \{0.0625, 0.25, 0.375, 0.25, 0.0625\}^T \label{eq:kernel}
@@ -205,7 +212,7 @@ This leaves only the contours that are likely to be die outlines.
 The Canny edge detector \cite{Canny1986} is used to find the edges of the dice.
 It builds upon the Sobel filter \cite{Sobel2014} which finds extreme vertical and horizontal gradients, $G_x$ and $G_y$, in an image.
 The edge gradient, $G$, and angle, $\theta$, for each pixel is then given by equations \ref{eq:gradient} and \ref{eq:angle} respectively.
-The edge gradient is always perpendicular to the edge, therefore it is rounded to either horizontal, vertical, or a diagonal.
+The edge gradient is always perpendicular to the edge, and is rounded to either horizontal, vertical, or a diagonal.
 \begin{align}
 	G &= \sqrt{G_x^2 + G_y^2} \label{eq:gradient} \\[1em]
 	\theta &= \tan^{-1}\left(\frac{G_y}{G_x}\right) \label{eq:angle}
@@ -355,18 +362,19 @@ The dice detector is very sensitive to the lighting conditions and the backgroun
 In the future, this should either be constrained or a method to overcome the variations in lighting should be devised.
 More experimentation into image morphology operations such as erosion, dilation, opening, and closing \cite{Szeliski2011} should be investigated.
 Canny edge detection was primarily used because it was simple to understand, however there do exist faster edge detectors that may perform more accurately, such as the declivity operator \cite{Mich1995}\cite{Bhardwaj2012}.
-Faster contour tracing algorithms should be researched, such as the one proposed by Seo, et al. \cite{Seo2016}.
+Faster contour tracing algorithms should be researched, such as the one proposed by Seo et al. \cite{Seo2016}.
 
 During testing, the number 4 was misclassified as a 2 eight times, and the number 5 was misclassified as a 3 once.
 The misclassifications are likely due to the visual similarity of these numbers and the CNN being trained on a small dataset. 
-Either the CNN model should be trained on more images to improve its accuracy in the future or the CNN should be replaced by a pip counting algorithm.
-Once the image is segmented into different die faces, a simple pip counting method based on image feature detection could be used.
+Either the CNN model should be trained on more images to improve its accuracy or the CNN should be replaced by a pip counting algorithm.
+Once the image is segmented into different die faces, a simple pip counting method based on image feature detection would likely be sufficient.
 
 Further research must be done to be able to detect dice from different camera angles.
 This may involve an entirely different model of dice detection and classification.
 All prior research uses pip detection to classify dice, this method would likely be more applicable to dice viewed at an angle.
 This is because when viewed at an angle, each pip becomes elliptical.
 This has the additional benefit of being able to determine the angle of the face.
+The Elliptical Hough Transform \cite{Nair1996} may be useful if this was to be investigated further.
 
 \printbibliography
 
